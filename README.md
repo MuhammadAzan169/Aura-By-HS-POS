@@ -70,6 +70,13 @@ absences, payslip PDF, booked to expenses) · Customer feedback and ratings · B
 anniversary reminders · WhatsApp bills, reminders and greetings · Automatic activity log of
 every change.
 
+### Owner controls
+Users & logins (create a login per person, set and reset passwords — branches cannot change their
+own) · Bill design with live PDF preview (A4, A5, 80 mm roll; colour, title, NTN, terms,
+signature, amount in words; per-branch overrides) · Stock transfer between branches · Safe delete
+with confirmation everywhere (records with bills or bookings can only be switched off, so reports
+stay correct) · Service category manager.
+
 ### Shop portal
 Dashboard · Appointments · Customers · Sales & Billing · Services (read-only) · Staff Schedule ·
 Inventory · Notifications · Shop Profile

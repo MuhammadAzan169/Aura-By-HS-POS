@@ -77,9 +77,9 @@ export function BillDesignSection({ settings }: { settings: Settings }): JSX.Ele
   useEffect(() => {
     let cancelled = false;
     let made: string | null = null;
-    void import('@/utils/receiptPdf').then(({ previewReceiptPdf }) => {
+    void import('@/utils/receiptPdf').then(async ({ previewReceiptPdf }) => {
       if (cancelled) return;
-      made = previewReceiptPdf({
+      made = await previewReceiptPdf({
         sale,
         shop,
         staff: db.staff.find((s) => s.id === sale.staffId),
@@ -87,6 +87,10 @@ export function BillDesignSection({ settings }: { settings: Settings }): JSX.Ele
         settings,
         design: effective,
       });
+      if (cancelled) {
+        URL.revokeObjectURL(made);
+        return;
+      }
       setUrl(made);
     });
     return () => {

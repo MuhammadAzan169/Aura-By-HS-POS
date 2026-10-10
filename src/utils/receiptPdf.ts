@@ -21,6 +21,32 @@ export interface ReceiptPdfInput {
   settings: Settings;
   /** Overrides the saved design, for the live preview. */
   design?: BillDesign;
+  /** The logo already read into a data URL (see withLogo). */
+  logoDataUrl?: string | null;
+}
+
+const logoCache = new Map<string, string | null>();
+
+/** jsPDF can only embed image data, so a logo given as a file path is read first. */
+async function withLogo(input: ReceiptPdfInput): Promise<ReceiptPdfInput> {
+  const src = input.shop?.logoUrl ?? input.settings.business.logoUrl;
+  if (!src) return { ...input, logoDataUrl: null };
+  if (src.startsWith('data:')) return { ...input, logoDataUrl: src };
+  if (!logoCache.has(src)) {
+    try {
+      const blob = await (await fetch(src)).blob();
+      const data = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(new Error('unreadable'));
+        r.readAsDataURL(blob);
+      });
+      logoCache.set(src, data);
+    } catch {
+      logoCache.set(src, null);
+    }
+  }
+  return { ...input, logoDataUrl: logoCache.get(src) ?? null };
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -82,7 +108,7 @@ function draw(doc: jsPDF, input: ReceiptPdfInput, d: BillDesign): number {
   };
 
   // ---- Header
-  const logo = shop?.logoUrl ?? settings.business.logoUrl;
+  const logo = input.logoDataUrl ?? null;
   const fmt = logo && d.showLogo ? imageFormat(logo) : null;
   const address = [d.showBranchAddress ? [shop?.addressLine, shop?.city].filter(Boolean).join(', ') : '', d.showBranchPhone ? shop?.phone : '']
     .filter(Boolean)
@@ -344,13 +370,13 @@ export function buildReceiptPdf(input: ReceiptPdfInput): jsPDF {
   return doc;
 }
 
-export function downloadReceiptPdf(input: ReceiptPdfInput): void {
-  buildReceiptPdf(input).save(`${input.sale.receiptNo}.pdf`);
+export async function downloadReceiptPdf(input: ReceiptPdfInput): Promise<void> {
+  buildReceiptPdf(await withLogo(input)).save(`${input.sale.receiptNo}.pdf`);
 }
 
 /** Opens the PDF in a new tab with the print dialog, so Print and Download match exactly. */
-export function printReceiptPdf(input: ReceiptPdfInput): void {
-  const doc = buildReceiptPdf(input);
+export async function printReceiptPdf(input: ReceiptPdfInput): Promise<void> {
+  const doc = buildReceiptPdf(await withLogo(input));
   doc.autoPrint();
   const url = doc.output('bloburl');
   const win = window.open(String(url), '_blank');
@@ -358,6 +384,6 @@ export function printReceiptPdf(input: ReceiptPdfInput): void {
   if (!win) doc.save(`${input.sale.receiptNo}.pdf`);
 }
 
-export function previewReceiptPdf(input: ReceiptPdfInput): string {
-  return String(buildReceiptPdf(input).output('bloburl'));
+export async function previewReceiptPdf(input: ReceiptPdfInput): Promise<string> {
+  return String(buildReceiptPdf(await withLogo(input)).output('bloburl'));
 }

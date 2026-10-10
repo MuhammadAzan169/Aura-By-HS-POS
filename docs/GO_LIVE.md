@@ -46,10 +46,15 @@ Then, as owner:
 
 1. **Settings → Data → Add starter menu** (optional) and edit prices under **Services**.
 2. **Settings → Business / Billing**: name, logo, tax %, receipt footer.
-3. **Shops → Add a shop** for each branch. The **Login email** is that branch's invitation —
-   the branch signs in with Google on that address, or uses *First time? Create a password*.
-   An email that was never added cannot see anything, even if it signs in.
-4. Per branch: add **Staff** with rotas, **Products** with opening stock.
+3. **Shops → Add a shop** for each branch, with a **login username and password** for it.
+   Add more logins (receptionist, manager) under **Users & logins**. Branch staff sign in with
+   the username and password you give them; they cannot change it — only you can, from
+   Users & logins or the branch page.
+4. **Lock sign-ups** (important): Supabase → **Authentication → Sign In / Providers** → turn off
+   **Allow new users to sign up**. You (the owner) are already in; branch logins are created by
+   you, so nobody else ever needs to sign up.
+5. **Settings → Bill design**: paper size (A4, A5 or 80 mm receipt printer), title, colour, terms.
+6. Per branch: add **Staff** with rotas and monthly salary, **Products** with opening stock.
 
 ## 5. Nightly backup — free
 
