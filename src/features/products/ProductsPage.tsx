@@ -1,10 +1,15 @@
+import { downloadExcel } from '@/utils/excel';
+import { ImportModal } from '@/components/shared/ImportModal';
+import * as importService from '@/services/importService';
+import { useAuthStore } from '@/store/authStore';
+import { FileUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Package, Pencil, Plus, TrendingUp } from 'lucide-react';
 import type { Product } from '@/types';
 import { PRODUCT_CATEGORIES } from '@/types/product';
 import { formatCurrency, formatPercent } from '@/utils/money';
 import { matches } from '@/utils/text';
-import { downloadCsv, timestampedName } from '@/utils/export';
+import { timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -29,6 +34,8 @@ import { ProductFormModal } from './ProductFormModal';
 export function ProductsPage(): JSX.Element {
   const db = useDb();
   const { shopId, isAllShops } = useShopScope();
+  const actor = useAuthStore((s) => s.user);
+  const [importOpen, setImportOpen] = useState(false);
   const confirm = useConfirm();
 
   const [search, setSearch] = useState('');
@@ -106,7 +113,7 @@ export function ProductsPage(): JSX.Element {
   };
 
   const exportCsv = (): void => {
-    downloadCsv(
+    void downloadExcel(
       table.sortedRows,
       [
         { header: 'Name', value: (p) => p.name },
@@ -231,6 +238,15 @@ export function ProductsPage(): JSX.Element {
               Export
             </Button>
             <Button
+              variant="outline"
+              leftIcon={<FileUp />}
+              disabled={shopId === null}
+              title={shopId === null ? 'Pick a single branch first' : undefined}
+              onClick={() => setImportOpen(true)}
+            >
+              Import
+            </Button>
+            <Button
               leftIcon={<Plus />}
               disabled={shopId === null}
               title={shopId === null ? 'Pick a single branch first' : undefined}
@@ -244,6 +260,18 @@ export function ProductsPage(): JSX.Element {
           </>
         }
       />
+
+      {shopId && actor && (
+        <ImportModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          title="Import products"
+          description="Load your product list and opening stock from Excel. Duplicate SKUs are skipped."
+          columns={importService.PRODUCT_COLUMNS}
+          templateName="products-import-template"
+          onImport={(rows) => importService.importProducts(rows, shopId, actor)}
+        />
+      )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Products" value={summary.total} icon={<Package />} hint={`${summary.retail} sold at the till`} />

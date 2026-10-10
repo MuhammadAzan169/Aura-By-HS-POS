@@ -1,3 +1,4 @@
+import { downloadExcel } from '@/utils/excel';
 import { useMemo, useState } from 'react';
 import {
   endOfDay,
@@ -13,7 +14,7 @@ import { Download, FileBarChart, Printer, TrendingDown, TrendingUp, Wallet } fro
 import { cn } from '@/utils/cn';
 import { formatCurrency, formatPercent } from '@/utils/money';
 import { formatDate, toISODate } from '@/utils/date';
-import { downloadCsv, printDocument, timestampedName } from '@/utils/export';
+import { printDocument, timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import {
@@ -109,7 +110,7 @@ export function ReportsPage(): JSX.Element {
     const stamp = `${tab}-${toISODate(period.from)}-to-${toISODate(period.to)}`;
 
     if (tab === 'services') {
-      downloadCsv(
+      void downloadExcel(
         data.services,
         [
           { header: 'Service', value: (r) => r.name },
@@ -123,7 +124,7 @@ export function ReportsPage(): JSX.Element {
     }
 
     if (tab === 'staff') {
-      downloadCsv(
+      void downloadExcel(
         data.staff,
         [
           { header: 'Staff', value: (r) => r.name },
@@ -140,7 +141,7 @@ export function ReportsPage(): JSX.Element {
     }
 
     if (tab === 'customers') {
-      downloadCsv(
+      void downloadExcel(
         data.customers,
         [
           { header: 'Customer', value: (r) => r.name },
@@ -155,7 +156,7 @@ export function ReportsPage(): JSX.Element {
     }
 
     if (tab === 'products') {
-      downloadCsv(
+      void downloadExcel(
         data.products,
         [
           { header: 'Product', value: (r) => r.name },
@@ -171,7 +172,7 @@ export function ReportsPage(): JSX.Element {
     }
 
     if (tab === 'shops') {
-      downloadCsv(
+      void downloadExcel(
         data.shops,
         [
           { header: 'Branch', value: (r) => r.name },
@@ -189,7 +190,7 @@ export function ReportsPage(): JSX.Element {
     }
 
     // Financial and revenue both export the period series.
-    downloadCsv(
+    void downloadExcel(
       data.series,
       [
         { header: 'Period', value: (r) => r.label },
@@ -217,7 +218,7 @@ export function ReportsPage(): JSX.Element {
               className="w-40"
             />
             <Button variant="outline" leftIcon={<Download />} onClick={exportCurrentTab}>
-              Export CSV
+              Export Excel
             </Button>
             <Button variant="outline" leftIcon={<Printer />} onClick={printDocument}>
               PDF

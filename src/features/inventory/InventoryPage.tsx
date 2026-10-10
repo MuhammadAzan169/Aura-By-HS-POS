@@ -1,3 +1,4 @@
+import { downloadExcel } from '@/utils/excel';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -14,7 +15,7 @@ import { cn } from '@/utils/cn';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/date';
 import { matches } from '@/utils/text';
-import { downloadCsv, timestampedName } from '@/utils/export';
+import { timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -122,7 +123,7 @@ export function InventoryPage(): JSX.Element {
   });
 
   const exportStock = (): void => {
-    downloadCsv(
+    void downloadExcel(
       stockTable.sortedRows,
       [
         { header: 'Product', value: (p) => p.name },

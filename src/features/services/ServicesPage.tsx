@@ -1,3 +1,6 @@
+import { ImportModal } from '@/components/shared/ImportModal';
+import * as importService from '@/services/importService';
+import { FileUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Clock, Pencil, Plus, Scissors, Users } from 'lucide-react';
@@ -31,6 +34,7 @@ export function ServicesPage(): JSX.Element {
   const confirm = useConfirm();
   const [params, setParams] = useSearchParams();
 
+  const [importOpen, setImportOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
@@ -199,6 +203,10 @@ export function ServicesPage(): JSX.Element {
         }
         actions={
           isAdmin ? (
+            <>
+            <Button variant="outline" leftIcon={<FileUp />} onClick={() => setImportOpen(true)}>
+              Import
+            </Button>
             <Button
               leftIcon={<Plus />}
               onClick={() => {
@@ -208,8 +216,19 @@ export function ServicesPage(): JSX.Element {
             >
               New service
             </Button>
+            </>
           ) : undefined
         }
+      />
+
+      <ImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import services"
+        description="Load your full service menu from Excel. New categories are created automatically."
+        columns={importService.SERVICE_COLUMNS}
+        templateName="services-import-template"
+        onImport={(rows) => importService.importServices(rows)}
       />
 
       <Card className="mb-4">

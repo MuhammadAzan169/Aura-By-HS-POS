@@ -1,3 +1,4 @@
+import { downloadExcel } from '@/utils/excel';
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Pencil, Plus, Trash2, Wallet } from 'lucide-react';
 import { startOfMonth, subMonths } from 'date-fns';
@@ -6,7 +7,7 @@ import { EXPENSE_CATEGORIES } from '@/types/expense';
 import { formatCurrency } from '@/utils/money';
 import { formatDate, toISODate } from '@/utils/date';
 import { matches } from '@/utils/text';
-import { downloadCsv, timestampedName } from '@/utils/export';
+import { timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -104,7 +105,7 @@ export function ExpensesPage(): JSX.Element {
   };
 
   const exportCsv = (): void => {
-    downloadCsv(
+    void downloadExcel(
       table.sortedRows,
       [
         { header: 'Date', value: (e) => e.spentOn },

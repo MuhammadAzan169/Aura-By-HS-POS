@@ -183,8 +183,10 @@ Rules the codebase follows:
   private window starts you fresh. If the browser refuses the write, the app keeps working in
   memory and logs a warning rather than failing mid-transaction.
 - Bills download as a real PDF ("Download PDF" on any receipt). Reports print via the print
-  stylesheet. Excel export is CSV, which Excel opens directly (a BOM is included so accented
-  names survive).
+  stylesheet.
+- Every list and report exports a real Excel file (.xlsx). Customers, products (with opening
+  stock) and services import from Excel or CSV — each screen offers a ready-made template, and
+  rows that fail validation are listed with the reason instead of stopping the import.
 - In demo mode password change and reset are placeholders; online they send real reset emails.
 - No email, SMS or WhatsApp is sent anywhere. Notifications are in-app only.
 

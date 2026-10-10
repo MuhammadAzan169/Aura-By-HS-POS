@@ -1,3 +1,7 @@
+import { downloadExcel } from '@/utils/excel';
+import { ImportModal } from '@/components/shared/ImportModal';
+import * as importService from '@/services/importService';
+import { FileUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarPlus, Download, Plus, Users } from 'lucide-react';
@@ -5,7 +9,7 @@ import type { Customer } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatDate, formatFriendlyDateTime } from '@/utils/date';
 import { matches } from '@/utils/text';
-import { downloadCsv, timestampedName } from '@/utils/export';
+import { timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -40,6 +44,7 @@ export function CustomersPage(): JSX.Element {
   const [membership, setMembership] = useState('all');
   const [activity, setActivity] = useState<'all' | 'active' | 'inactive' | 'new' | 'lapsed'>('all');
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const debounced = useDebounce(search);
 
@@ -115,7 +120,7 @@ export function CustomersPage(): JSX.Element {
     (membership !== 'all' ? 1 : 0) + (activity !== 'all' ? 1 : 0) + (debounced ? 1 : 0);
 
   const exportCsv = (): void => {
-    downloadCsv(
+    void downloadExcel(
       table.sortedRows,
       [
         { header: 'Name', value: (r) => r.customer.name },
@@ -241,6 +246,15 @@ export function CustomersPage(): JSX.Element {
               Export
             </Button>
             <Button
+              variant="outline"
+              leftIcon={<FileUp />}
+              disabled={shopId === null}
+              title={shopId === null ? 'Pick a single branch first' : undefined}
+              onClick={() => setImportOpen(true)}
+            >
+              Import
+            </Button>
+            <Button
               leftIcon={<Plus />}
               disabled={shopId === null}
               title={shopId === null ? 'Pick a single branch first' : undefined}
@@ -251,6 +265,18 @@ export function CustomersPage(): JSX.Element {
           </>
         }
       />
+
+      {shopId && (
+        <ImportModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          title="Import customers"
+          description="Bring your existing customer list in from Excel. Duplicate phone numbers are skipped."
+          columns={importService.CUSTOMER_COLUMNS}
+          templateName="customers-import-template"
+          onImport={(rows) => importService.importCustomers(rows, shopId)}
+        />
+      )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total customers" value={summary.total} icon={<Users />} />

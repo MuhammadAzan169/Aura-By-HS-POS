@@ -1,3 +1,4 @@
+import { downloadExcel } from '@/utils/excel';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Download, Plus, Printer, Receipt, RotateCcw } from 'lucide-react';
@@ -5,7 +6,7 @@ import type { Sale } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/date';
 import { matches } from '@/utils/text';
-import { downloadCsv, timestampedName } from '@/utils/export';
+import { timestampedName } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -121,7 +122,7 @@ export function BillsPage(): JSX.Element {
   };
 
   const exportCsv = (): void => {
-    downloadCsv(
+    void downloadExcel(
       table.sortedRows,
       [
         { header: 'Receipt', value: (s) => s.receiptNo },
