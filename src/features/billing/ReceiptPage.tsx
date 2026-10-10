@@ -82,8 +82,22 @@ export function ReceiptPage(): JSX.Element {
             <Button variant="outline" leftIcon={<Printer />} onClick={printDocument}>
               Print
             </Button>
-            <Button variant="outline" leftIcon={<Download />} onClick={printDocument}>
-              Save as PDF
+            <Button
+              variant="outline"
+              leftIcon={<Download />}
+              onClick={() =>
+                // Loaded on demand so the PDF library never slows the till's first paint.
+                void import('@/utils/receiptPdf').then(({ downloadReceiptPdf }) =>
+                  downloadReceiptPdf({
+                    sale,
+                    shop: db.shops.find((s) => s.id === sale.shopId),
+                    staff: db.staff.find((s) => s.id === sale.staffId),
+                    settings: db.settings,
+                  }),
+                )
+              }
+            >
+              Download PDF
             </Button>
             {sale.status === 'completed' && (
               <Button
@@ -116,7 +130,8 @@ export function ReceiptPage(): JSX.Element {
       </div>
 
       <p className="no-print mt-4 text-center text-xs text-subtle">
-        "Save as PDF" opens your browser's print dialog — choose "Save as PDF" as the destination.
+        "Download PDF" saves the bill as a file you can send on WhatsApp or email. "Print" sends
+        it to the receipt printer.
       </p>
     </>
   );

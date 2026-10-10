@@ -85,7 +85,7 @@ export function ShopProfilePage(): JSX.Element {
 
   const attemptPasswordChange = async (): Promise<void> => {
     try {
-      await changePassword();
+      toast.success(await changePassword());
     } catch (error) {
       toast.fromError(error);
     }
@@ -271,7 +271,7 @@ export function ShopProfilePage(): JSX.Element {
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium text-ink">Change password</p>
                   <p className="mt-0.5 text-xs text-muted">
-                    Not functional in the demo. Ask the owner to reset it from the Shops page.
+                    We email you a secure link to choose a new password.
                   </p>
                 </div>
               </div>

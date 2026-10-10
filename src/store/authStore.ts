@@ -9,7 +9,7 @@ interface AuthState {
   loggingIn: boolean;
   error: string | null;
 
-  restore: () => void;
+  restore: () => Promise<void>;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -23,8 +23,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
   loggingIn: false,
   error: null,
 
-  restore: () => {
-    set({ user: authService.getCurrentUser(), initialising: false });
+  restore: async () => {
+    try {
+      set({ user: await authService.restoreSession(), initialising: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not restore your session.';
+      set({ user: null, initialising: false, error: message });
+    }
   },
 
   login: async (email, password) => {
@@ -48,7 +53,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   clearError: () => set({ error: null }),
 
-  refresh: () => set({ user: authService.getCurrentUser() }),
+  refresh: () => set({ user: authService.getCurrentUser() ?? null }),
 }));
 
 /** Convenience selectors used across the app. */

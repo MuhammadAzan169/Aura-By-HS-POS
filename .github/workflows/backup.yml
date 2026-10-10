@@ -1,0 +1,107 @@
+# Nightly database backup.
+#
+# The shop owner should never have to remember to press an Export button — a
+# backup that depends on someone doing something is a backup you find out you
+# don't have. This runs on GitHub's schedule, dumps the whole Postgres database
+# from Supabase, and keeps the file as a build artifact.
+#
+# It costs nothing: scheduled jobs on public repos are free, and a private repo
+# gets 2,000 free minutes a month against the ~1 minute this uses per night.
+#
+# ---------------------------------------------------------------------------
+# ONE-TIME SETUP
+#
+# 1. Supabase dashboard -> Project Settings -> Database -> Connection string ->
+#    URI. Copy it and put the database password into it.
+# 2. GitHub repo -> Settings -> Secrets and variables -> Actions -> New
+#    repository secret, named SUPABASE_DB_URL, with that string as the value.
+#
+# That's it. The first backup runs the next night, or immediately if you press
+# "Run workflow" on the Actions tab.
+#
+# TO RESTORE: download the artifact, unzip it, then
+#   psql "$SUPABASE_DB_URL" -f aura-backup-YYYY-MM-DD.sql
+# ---------------------------------------------------------------------------
+
+name: Nightly backup
+
+on:
+  schedule:
+    # 21:00 UTC = 02:00 Pakistan time, after the shops have closed and settled
+    # their day, so a backup never lands mid-transaction on a busy till.
+    - cron: "0 21 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install a matching Postgres client
+        # The runner ships with pg_dump 16 and Supabase is on 17. pg_dump
+        # refuses to dump a server newer than itself, so the newer client
+        # comes from the PostgreSQL project's own apt repository.
+        #
+        # WHEN SUPABASE UPGRADES its Postgres major version, bump PG_MAJOR to
+        # match. Until you do the dump fails loudly, which is the right way
+        # round for a backup.
+        env:
+          PG_MAJOR: "17"
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc > /dev/null
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq "postgresql-client-$PG_MAJOR"
+
+          # The explicit path matters. /usr/bin/pg_dump is a wrapper that can
+          # still resolve to the older client the runner came with, which is
+          # exactly how this failed with "server version mismatch" while the
+          # newer client sat installed alongside it.
+          echo "PG_DUMP=/usr/lib/postgresql/$PG_MAJOR/bin/pg_dump" >> "$GITHUB_ENV"
+          "/usr/lib/postgresql/$PG_MAJOR/bin/pg_dump" --version
+
+      - name: Dump the database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL is not set — see the setup notes at the top of this file."
+            exit 1
+          fi
+
+          # Pasting a connection string into a web form very easily carries a
+          # trailing newline, and the failure it causes names the wrong culprit:
+          # Postgres reports the DATABASE as missing, because the stray
+          # character landed on the end of its name — which reads as a missing
+          # database rather than a bad paste. Stripped here so the secret
+          # cannot be entered wrongly in a way that survives.
+          DB_URL=$(printf '%s' "$SUPABASE_DB_URL" | tr -d '[:space:]')
+
+          NAME="aura-backup-$(date -u +%Y-%m-%d).sql"
+          # Data and schema together, so the file alone can rebuild the project
+          # into an empty database. --no-owner keeps it restorable into a
+          # different Supabase project than the one it came from.
+          "$PG_DUMP" "$DB_URL" --no-owner --no-privileges --clean --if-exists -f "$NAME"
+          gzip "$NAME"
+          ls -lh "$NAME.gz"
+
+      - name: Fail loudly if the dump is suspiciously small
+        # A dump that "succeeded" but holds nothing is the worst outcome: it
+        # looks like a backup for months and restores an empty shop.
+        run: |
+          SIZE=$(stat -c%s aura-backup-*.sql.gz)
+          echo "Backup is $SIZE bytes"
+          if [ "$SIZE" -lt 2000 ]; then
+            echo "That is too small to be a real backup — check the connection string."
+            exit 1
+          fi
+
+      - name: Keep it
+        uses: actions/upload-artifact@v4
+        with:
+          name: aura-backup-${{ github.run_id }}
+          path: aura-backup-*.sql.gz
+          # Three months of nightly copies. Long enough that a problem noticed
+          # weeks later is still recoverable.
+          retention-days: 90

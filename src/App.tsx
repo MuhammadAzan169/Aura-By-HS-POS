@@ -13,7 +13,7 @@ export function App(): JSX.Element {
 
   // Check for a stored session once, before the guards run.
   useEffect(() => {
-    restore();
+    void restore();
   }, [restore]);
 
   // Keep money formatting in step with whatever currency the owner set.

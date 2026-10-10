@@ -1,3 +1,4 @@
+import { isCloud } from '@/services/cloud/client';
 import { useEffect, useState } from 'react';
 import type { BusinessHours, Shop } from '@/types';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
@@ -260,13 +261,21 @@ export function ShopFormModal({ open, onClose, shop }: ShopFormModalProps): JSX.
                 onChange={(e) => setAccountEmail(e.target.value)}
               />
 
-              <Input
-                label="Temporary password"
-                required
-                value={accountPassword}
-                onChange={(e) => setAccountPassword(e.target.value)}
-                hint="Ask them to change it on first sign-in once the backend is connected."
-              />
+              {isCloud ? (
+                <p className="rounded-xl border border-info/25 bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-ink">
+                  This email is the branch's invitation. The branch signs in with{' '}
+                  <strong>Continue with Google</strong> using this address, or picks{' '}
+                  <strong>Create a password</strong> on the sign-in screen. No one else can get in.
+                </p>
+              ) : (
+                <Input
+                  label="Temporary password"
+                  required
+                  value={accountPassword}
+                  onChange={(e) => setAccountPassword(e.target.value)}
+                  hint="Demo mode only — online, branches sign in with Google or their own password."
+                />
+              )}
             </div>
           </TabPanel>
         )}

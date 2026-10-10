@@ -1,5 +1,7 @@
 import type { Database } from '@/mock/seed';
 import { getDb, mutateDb } from '@/store/dataStore';
+import { isCloud } from './cloud/client';
+import { flush } from './cloud/sync';
 
 /**
  * Thin seam between the service layer and wherever the data actually lives.
@@ -9,8 +11,8 @@ import { getDb, mutateDb } from '@/store/dataStore';
  * mock store are what disappear, not the components above them.
  */
 
-/** Simulated network latency, so loading states are real and visible. */
-const LATENCY_MS = 140;
+/** Simulated network latency in demo mode, so loading states are real and visible. */
+const LATENCY_MS = isCloud ? 0 : 140;
 
 export function delay<T>(value: T, ms: number = LATENCY_MS): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
@@ -30,6 +32,15 @@ export async function commit<T>(recipe: (db: Database) => T): Promise<T> {
   write((db) => {
     result = recipe(db);
   });
+  if (isCloud) {
+    // Online, a write only counts once the database has accepted it.
+    try {
+      await flush();
+    } catch (error) {
+      throw new ServiceError(error instanceof Error ? error.message : 'The change was not saved.', 'conflict');
+    }
+    return result;
+  }
   return delay(result);
 }
 

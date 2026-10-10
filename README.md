@@ -5,13 +5,13 @@
 A production-quality **front end** for a multi-branch salon business: bookings, point of sale,
 customers, staff rotas, stock and reporting, for one owner and three salon branches.
 
-Everything runs in the browser. There is no backend, no database and no network calls — the whole
-system is driven by a generated dataset held in a Zustand store and mirrored to `localStorage`, so
-every screen is genuinely interactive and your changes survive a refresh.
+It runs in two modes, picked automatically:
 
-The code is deliberately structured so a real TypeScript backend (Supabase or otherwise) can be
-dropped in later **without touching a single component**. See
-[Connecting a real backend](#connecting-a-real-backend).
+- **Online** — when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Data lives in
+  Supabase (Postgres) and is shared live between every branch; sign-in is Google or email +
+  password; row-level security keeps each branch inside its own data. **To launch, follow
+  [docs/GO_LIVE.md](docs/GO_LIVE.md).**
+- **Demo** — with no keys. A generated dataset in the browser, with one-click demo logins.
 
 ---
 
@@ -164,45 +164,28 @@ Rules the codebase follows:
 
 ---
 
-## Connecting a real backend
+## How the online mode works
 
-The seam is deliberately narrow. To move onto Supabase (or any API), you change these files and
-**nothing above them**:
+- `supabase/schema.sql` — one table per entity (`id`, `data jsonb`, generated `shop_id`), row-level
+  security on all of them, a database trigger that refuses double-bookings, a unique receipt
+  number per bill, and `claim_owner()` for first-run setup.
+- `src/services/cloud/sync.ts` — loads everything the signed-in account may see, then diffs every
+  store mutation by row identity and sends only the changed rows. Other tills' changes arrive over
+  Supabase Realtime. A write the database refuses (permission, double-booking) is reported to the
+  user and the local copy is reloaded, so the screen never shows something that was not saved.
+- `src/services/authService.ts` — Google OAuth, password sign-in, create-password, reset links.
+  A login is only let in when the owner has created a profile for that email.
+- The services, pages and components are the same in both modes.
 
-| Replace | What it does now | What it becomes |
-| --- | --- | --- |
-| `src/services/authService.ts` | Checks a mock credentials table | `supabase.auth.signInWithPassword`, `signOut`, `getUser` + a `profiles` row for `role` / `shopId` |
-| `src/services/db.ts` | Reads/writes the Zustand store, simulates latency | Your Supabase client and query helpers |
-| `src/services/*Service.ts` | Array operations over the in-memory tables | `supabase.from('…').select/insert/update` |
-| `src/store/dataStore.ts` | Holds the whole database in memory | Delete, or shrink to a cache |
-| `src/mock/` | Generates the demo dataset | Delete — replaced by your seed migration |
-
-Everything else stays: the types in `src/types/` map one-to-one onto database tables, and
-`availability.ts` and `pricing.ts` are pure functions you can lift straight onto the server to
-enforce the same rules there.
-
-Two things to move server-side when you do:
-
-1. **Slot validation.** `validateBooking()` runs client-side today. Run it in the database
-   transaction too — it is the only thing preventing a double-booking under real concurrency.
-2. **The tenant boundary.** `scopeTo()` and `assertShopAccess()` in `src/services/db.ts` keep shop
-   users inside their own branch. Replace them with Postgres row-level security.
-
-Also note that `readImageAsDataUrl` in `settingsService.ts` stores logos as data URLs to avoid
-needing a file server; that becomes Supabase Storage.
-
----
-
-## Known limits of the demo
+## Known limits
 
 - Data lives in `localStorage` under the `aura:` namespace (about 1.2 MB at the seeded volume). Clearing site data or using a
   private window starts you fresh. If the browser refuses the write, the app keeps working in
   memory and logs a warning rather than failing mid-transaction.
-- "Save as PDF" opens the browser's print dialog — the print stylesheet renders the receipt and the
-  reports cleanly. Excel export is CSV, which Excel opens directly (a BOM is included so accented
+- Bills download as a real PDF ("Download PDF" on any receipt). Reports print via the print
+  stylesheet. Excel export is CSV, which Excel opens directly (a BOM is included so accented
   names survive).
-- Password change and password reset are deliberate placeholders; they need a real auth backend and
-  say so when used.
+- In demo mode password change and reset are placeholders; online they send real reset emails.
 - No email, SMS or WhatsApp is sent anywhere. Notifications are in-app only.
 
 ---

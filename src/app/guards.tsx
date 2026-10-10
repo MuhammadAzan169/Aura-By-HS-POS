@@ -65,9 +65,12 @@ export function RequireRole({ role }: { role: Role }): JSX.Element {
 export function RedirectIfAuthenticated(): JSX.Element {
   const user = useAuthStore((s) => s.user);
   const initialising = useAuthStore((s) => s.initialising);
+  const location = useLocation();
+  // A password-reset link signs the person in; they still need the form to set it.
+  const resetting = new URLSearchParams(location.search).has('reset');
 
   if (initialising) return <BootScreen />;
-  if (user) return <Navigate to={homeFor(user.role)} replace />;
+  if (user && !resetting) return <Navigate to={homeFor(user.role)} replace />;
 
   return <Outlet />;
 }

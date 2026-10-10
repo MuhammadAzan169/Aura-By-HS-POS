@@ -4,6 +4,8 @@ import {
   Bell,
   Building2,
   CalendarCog,
+  Download,
+  Sparkles,
   KeyRound,
   Receipt,
   RotateCcw,
@@ -20,6 +22,11 @@ import { useDataStore } from '@/store/dataStore';
 import { useCartStore } from '@/store/cartStore';
 import * as settingsService from '@/services/settingsService';
 import { changePassword } from '@/services/authService';
+import { isCloud } from '@/services/cloud/client';
+import { mutateDb } from '@/store/dataStore';
+import { flush } from '@/services/cloud/sync';
+import { downloadJson, timestampedName } from '@/utils/export';
+import { memberships, serviceCategories, services, servicePackages } from '@/mock/catalog';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -425,7 +432,7 @@ function AccountSection(): JSX.Element {
 
   const attemptPasswordChange = async (): Promise<void> => {
     try {
-      await changePassword();
+      toast.success(await changePassword());
     } catch (error) {
       toast.fromError(error);
     }
@@ -466,8 +473,8 @@ function AccountSection(): JSX.Element {
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium text-ink">Change password</p>
               <p className="mt-0.5 text-xs text-muted">
-                Not functional in the demo — it needs a real auth backend. The button shows what
-                would happen.
+                We email you a secure link to choose a new password. Google sign-in users can
+                ignore this.
               </p>
             </div>
           </div>
@@ -489,6 +496,103 @@ function AccountSection(): JSX.Element {
 // ---------------------------------------------------------------------- data
 
 function DataSection(): JSX.Element {
+  return isCloud ? <CloudDataSection /> : <DemoDataSection />;
+}
+
+/** Online: backups and first-run setup. The database itself lives in Supabase. */
+function CloudDataSection(): JSX.Element {
+  const db = useDb();
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  const exportBackup = (): void => {
+    const { credentials: _unused, ...tables } = db;
+    downloadJson({ exportedAt: new Date().toISOString(), ...tables }, timestampedName('aura-backup'));
+    toast.success('Backup downloaded.', 'Keep the file somewhere safe, e.g. Google Drive.');
+  };
+
+  const loadStarter = useAsyncAction(
+    async () => {
+      const ids = new Set(db.services.map((s) => s.id));
+      mutateDb((next) => {
+        next.serviceCategories = [
+          ...next.serviceCategories,
+          ...serviceCategories.filter((c) => !next.serviceCategories.some((x) => x.id === c.id)),
+        ];
+        next.services = [...next.services, ...services.filter((s) => !ids.has(s.id))];
+        next.packages = [
+          ...next.packages,
+          ...servicePackages.filter((p) => !next.packages.some((x) => x.id === p.id)),
+        ];
+        next.memberships = [
+          ...next.memberships,
+          ...memberships.filter((m) => !next.memberships.some((x) => x.id === m.id)),
+        ];
+      });
+      await flush();
+    },
+    { successMessage: 'Starter menu added. Edit prices and names under Services.' },
+  );
+
+  const onStarter = async (): Promise<void> => {
+    const result = await confirm({
+      title: 'Add the starter service menu?',
+      description:
+        'Adds sample categories, services, packages and memberships you can then edit or switch off. Nothing existing is changed.',
+      confirmLabel: 'Add starter menu',
+    });
+    if (result.confirmed) await loadStarter.run();
+  };
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader
+        title="Data & backups"
+        description="Everything is stored in your Supabase database and shared live by every branch."
+      />
+      <div className="mt-5 space-y-4">
+        <div className="flex items-start gap-3 rounded-xl border border-info/25 bg-info-soft px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden />
+          <p className="text-[13px] leading-relaxed text-ink">
+            A full copy of the database is also saved automatically every night by the GitHub
+            backup job (see the setup guide). Use the button below for an extra copy whenever
+            you like.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-line p-4">
+          <p className="text-[13px] font-medium text-ink">Download a backup</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Every branch, customer, appointment, bill and stock record as one file.
+          </p>
+          <Button variant="outline" size="sm" className="mt-3" leftIcon={<Download />} onClick={exportBackup}>
+            Download backup (.json)
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-line p-4">
+          <p className="text-[13px] font-medium text-ink">Starter service menu</p>
+          <p className="mt-0.5 text-xs text-muted">
+            A ready-made salon menu (hair, skin, nails, make-up, bridal packages, memberships) to
+            save typing on day one. {db.services.length} services in the menu now.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            leftIcon={<Sparkles />}
+            loading={loadStarter.pending}
+            onClick={() => void onStarter()}
+          >
+            Add starter menu
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function DemoDataSection(): JSX.Element {
   const confirm = useConfirm();
   const toast = useToast();
   const resetDemoData = useDataStore((s) => s.resetDemoData);

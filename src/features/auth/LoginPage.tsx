@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,10 +9,65 @@ import { DEMO_ACCOUNTS } from '@/mock/shops';
 import { homeFor } from '@/app/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { isCloud } from '@/services/cloud/client';
+import {
+  createPassword,
+  loginWithGoogle,
+  sendPasswordReset,
+  setNewPassword,
+} from '@/services/authService';
+
+type Mode = 'signin' | 'create' | 'forgot';
+
+function GoogleIcon(): JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden>
+      <path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2-1.9 3.3-4.7 3.3-8z" />
+      <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z" />
+      <path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8l3.7-2.8z" />
+      <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z" />
+    </svg>
+  );
+}
+
+/** Shown after a reset link brings the person back signed in. */
+function SetNewPassword({ onDone }: { onDone: () => void }): JSX.Element {
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  return (
+    <form
+      className="mt-6 space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setBusy(true);
+        setNewPassword(password)
+          .then(onDone)
+          .catch((err: unknown) => setMessage(err instanceof Error ? err.message : 'Could not save.'))
+          .finally(() => setBusy(false));
+      }}
+    >
+      <h2 className="font-display text-2xl font-semibold text-ink">Choose a new password</h2>
+      {message && <p role="alert" className="text-[13px] text-danger">{message}</p>}
+      <Input
+        label="New password"
+        type="password"
+        autoComplete="new-password"
+        leftIcon={<Lock />}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        hint="At least 8 characters."
+      />
+      <Button type="submit" fullWidth size="lg" loading={busy}>
+        Save password and continue
+      </Button>
+    </form>
+  );
+}
 
 const schema = z.object({
   email: z.string().min(1, 'Enter your email address').email('That does not look like an email address'),
-  password: z.string().min(1, 'Enter your password'),
+  password: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -30,6 +85,22 @@ export function LoginPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as LocationState | null)?.from;
+  const signedIn = useAuthStore((s) => s.user);
+  const resetting = new URLSearchParams(location.search).has('reset');
+  const [mode, setMode] = useState<Mode>('signin');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const shownError = localError ?? error;
+
+  const google = (): void => {
+    setLocalError(null);
+    setBusy(true);
+    loginWithGoogle().catch((err: unknown) => {
+      setLocalError(err instanceof Error ? err.message : 'Google sign-in failed.');
+      setBusy(false);
+    });
+  };
 
   const {
     register,
@@ -45,6 +116,24 @@ export function LoginPage(): JSX.Element {
   useEffect(() => () => clearError(), [clearError]);
 
   const submit = async (values: FormValues): Promise<void> => {
+    setLocalError(null);
+    setNotice(null);
+    if (mode !== 'signin') {
+      setBusy(true);
+      try {
+        setNotice(
+          mode === 'create'
+            ? await createPassword(values.email, values.password)
+            : await sendPasswordReset(values.email),
+        );
+        setMode('signin');
+      } catch (err) {
+        setLocalError(err instanceof Error ? err.message : 'Something went wrong.');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const user = await login(values.email, values.password).catch(() => null);
     if (!user) return;
     // Send them where they were heading, unless that belongs to the other portal.
@@ -103,14 +192,14 @@ export function LoginPage(): JSX.Element {
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-white/75">
             Bookings that respect your stylists' rotas, a point of sale built for a busy Saturday,
-            and numbers you can actually act on — across all three salons.
+            and numbers you can actually act on — across every salon.
           </p>
 
           <dl className="mt-10 grid grid-cols-3 gap-6 border-t border-white/15 pt-6">
             {[
-              { value: '3', label: 'Branches' },
-              { value: '16', label: 'Stylists' },
-              { value: '40', label: 'Services' },
+              { value: 'POS', label: 'Bills & PDF' },
+              { value: 'Book', label: 'Appointments' },
+              { value: 'Stock', label: 'Inventory' },
             ].map((stat) => (
               <div key={stat.label}>
                 <dt className="sr-only">{stat.label}</dt>
@@ -128,7 +217,9 @@ export function LoginPage(): JSX.Element {
         </div>
 
         <p className="relative text-xs text-white/45">
-          Demo build — all data is generated and stored in your browser.
+          {isCloud
+            ? 'Secured with Google sign-in and per-branch access rules.'
+            : 'Demo build — all data is generated and stored in your browser.'}
         </p>
       </section>
 
@@ -149,16 +240,55 @@ export function LoginPage(): JSX.Element {
             </p>
           </div>
 
-          <h2 className="font-display text-2xl font-semibold text-ink">Welcome back</h2>
-          <p className="mt-1 text-sm text-muted">Sign in to manage your salon.</p>
+          {resetting && signedIn ? (
+            <SetNewPassword onDone={() => navigate(homeFor(signedIn.role), { replace: true })} />
+          ) : (
+          <>
+          <h2 className="font-display text-2xl font-semibold text-ink">
+            {mode === 'create' ? 'Create your password' : mode === 'forgot' ? 'Reset your password' : 'Welcome back'}
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {mode === 'create'
+              ? 'Use the email the owner added for your branch.'
+              : mode === 'forgot'
+                ? 'We will email you a link to choose a new one.'
+                : 'Sign in to manage your salon.'}
+          </p>
 
-          {error && (
+          {notice && (
+            <p role="status" className="mt-5 rounded-xl border border-info/25 bg-info-soft px-3.5 py-3 text-[13px] text-ink">
+              {notice}
+            </p>
+          )}
+
+          {isCloud && mode === 'signin' && (
+            <>
+              <Button
+                variant="outline"
+                fullWidth
+                size="lg"
+                className="mt-6"
+                leftIcon={<GoogleIcon />}
+                loading={busy}
+                onClick={google}
+              >
+                Continue with Google
+              </Button>
+              <div className="mt-6 flex items-center gap-3">
+                <span className="h-px flex-1 bg-line" aria-hidden />
+                <span className="text-xs font-medium text-subtle">or with email</span>
+                <span className="h-px flex-1 bg-line" aria-hidden />
+              </div>
+            </>
+          )}
+
+          {shownError && (
             <div
               role="alert"
               className="mt-5 flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger-soft px-3.5 py-3"
             >
               <AlertCircle className="mt-px h-4 w-4 shrink-0 text-danger" aria-hidden />
-              <p className="text-[13px] leading-snug text-danger">{error}</p>
+              <p className="text-[13px] leading-snug text-danger">{shownError}</p>
             </div>
           )}
 
@@ -173,21 +303,50 @@ export function LoginPage(): JSX.Element {
               {...register('email')}
             />
 
-            <Input
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              leftIcon={<Lock />}
-              error={errors.password?.message}
-              {...register('password')}
-            />
+            {mode !== 'forgot' && (
+              <Input
+                label={mode === 'create' ? 'New password' : 'Password'}
+                type="password"
+                autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
+                placeholder="••••••••"
+                leftIcon={<Lock />}
+                error={errors.password?.message}
+                {...register('password')}
+              />
+            )}
 
-            <Button type="submit" fullWidth size="lg" loading={loggingIn} rightIcon={<ArrowRight />}>
-              Sign in
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              loading={loggingIn || busy}
+              rightIcon={<ArrowRight />}
+            >
+              {mode === 'create' ? 'Create password' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
             </Button>
           </form>
 
+          {isCloud && (
+            <div className="mt-4 flex flex-wrap justify-between gap-2 text-[13px]">
+              {mode === 'signin' ? (
+                <>
+                  <button type="button" className="text-brand hover:underline" onClick={() => setMode('create')}>
+                    First time? Create a password
+                  </button>
+                  <button type="button" className="text-muted hover:underline" onClick={() => setMode('forgot')}>
+                    Forgot password?
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="text-brand hover:underline" onClick={() => setMode('signin')}>
+                  Back to sign in
+                </button>
+              )}
+            </div>
+          )}
+
+          {!isCloud && (
+          <>
           <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-line" aria-hidden />
             <span className="text-xs font-medium text-subtle">Or try a demo account</span>
@@ -235,6 +394,10 @@ export function LoginPage(): JSX.Element {
               <span className="font-mono">clifton@aurabyhs.pk</span>, same password.
             </p>
           </dl>
+          </>
+          )}
+          </>
+          )}
         </div>
       </section>
     </div>
