@@ -23,6 +23,7 @@ import { useCartStore } from '@/store/cartStore';
 import * as customerService from '@/services/customerService';
 import { statsFor } from '@/services/customerService';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { CustomerAccountCard } from './CustomerAccountCard';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Tabs, TabPanel } from '@/components/ui/Tabs';
@@ -235,6 +236,7 @@ export function CustomerDetailPage(): JSX.Element {
       {/* ---------------- Overview ---------------- */}
       <TabPanel active={tab === 'overview'}>
         <div className="grid gap-4 lg:grid-cols-2">
+          <CustomerAccountCard customer={customer} />
           <Card>
             <CardHeader title="Membership" />
 

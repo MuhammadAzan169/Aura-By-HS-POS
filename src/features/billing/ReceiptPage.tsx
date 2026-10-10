@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/States';
 import { Badge } from '@/components/ui/Badge';
 import { Receipt } from './Receipt';
+import { ReceiptExtras } from './ReceiptExtras';
 
 export function ReceiptPage(): JSX.Element {
   const { saleId } = useParams<{ saleId: string }>();
@@ -124,6 +125,8 @@ export function ReceiptPage(): JSX.Element {
           <p className="mt-0.5 text-[13px] text-ink">{sale.refundReason}</p>
         </div>
       )}
+
+      <ReceiptExtras sale={sale} />
 
       <div className="flex justify-center">
         <Receipt sale={sale} />

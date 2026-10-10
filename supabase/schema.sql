@@ -106,7 +106,7 @@ create policy profiles_self_update on public.profiles for update
 do $$
 declare t text;
 begin
-  foreach t in array array['service_categories','services','packages','memberships','app_settings']
+  foreach t in array array['service_categories','services','packages','memberships','app_settings','coupons']
   loop
     execute format($f$
       create table if not exists public.%1$I (
@@ -148,7 +148,9 @@ do $$
 declare t text;
 begin
   foreach t in array array['staff','customers','customer_memberships','products',
-                           'inventory_movements','appointments','sales','expenses','notifications']
+                           'inventory_movements','appointments','sales','expenses','notifications',
+                           'customer_credits','register_sessions','attendance','feedback',
+                           'payroll_runs','activity_log']
   loop
     execute format($f$
       create table if not exists public.%1$I (
@@ -169,6 +171,27 @@ begin
   end loop;
 end $$;
 
+-- Gift vouchers are sold at one branch and redeemed at any, so every branch may
+-- read and update them; only the owner may delete one.
+create table if not exists public.vouchers (
+  id text primary key,
+  data jsonb not null,
+  shop_id text generated always as (data->>'shopId') stored,
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists vouchers_code_key on public.vouchers ((upper(data->>'code')));
+alter table public.vouchers enable row level security;
+drop policy if exists vouchers_admin on public.vouchers;
+create policy vouchers_admin on public.vouchers for all
+  using (public.is_admin()) with check (public.is_admin());
+drop policy if exists vouchers_read on public.vouchers;
+create policy vouchers_read on public.vouchers for select using (public.is_member());
+drop policy if exists vouchers_sell on public.vouchers;
+create policy vouchers_sell on public.vouchers for insert with check (shop_id = public.my_shop_id());
+drop policy if exists vouchers_redeem on public.vouchers;
+create policy vouchers_redeem on public.vouchers for update
+  using (public.is_member()) with check (public.is_member());
+
 -- ---------------------------------------------------------------------------
 -- updated_at bookkeeping
 -- ---------------------------------------------------------------------------
@@ -180,7 +203,8 @@ declare t text;
 begin
   foreach t in array array['profiles','shops','service_categories','services','packages',
     'memberships','app_settings','staff','customers','customer_memberships','products',
-    'inventory_movements','appointments','sales','expenses','notifications']
+    'inventory_movements','appointments','sales','expenses','notifications','coupons','vouchers',
+    'customer_credits','register_sessions','attendance','feedback','payroll_runs','activity_log']
   loop
     execute format('drop trigger if exists touch on public.%I', t);
     execute format('create trigger touch before update on public.%I
@@ -227,7 +251,8 @@ declare t text;
 begin
   foreach t in array array['profiles','shops','service_categories','services','packages',
     'memberships','app_settings','staff','customers','customer_memberships','products',
-    'inventory_movements','appointments','sales','expenses','notifications']
+    'inventory_movements','appointments','sales','expenses','notifications','coupons','vouchers',
+    'customer_credits','register_sessions','attendance','feedback','payroll_runs']
   loop
     begin
       execute format('alter publication supabase_realtime add table public.%I', t);
@@ -239,3 +264,22 @@ end $$;
 -- Two tills at one branch can never print the same receipt number: the second
 -- save is refused, the till reloads, and the next attempt takes the next number.
 create unique index if not exists sales_receipt_no_key on public.sales ((data->>'receiptNo'));
+
+-- The audit trail is append-only from the app's side: no one can quietly edit
+-- or delete what they did. Only an owner may correct it.
+drop policy if exists activity_log_shop on public.activity_log;
+drop policy if exists activity_log_shop_read on public.activity_log;
+create policy activity_log_shop_read on public.activity_log for select using (shop_id = public.my_shop_id());
+drop policy if exists activity_log_shop_write on public.activity_log;
+create policy activity_log_shop_write on public.activity_log for insert with check (shop_id = public.my_shop_id());
+create index if not exists activity_log_updated_idx on public.activity_log (updated_at);
+
+-- One open till per branch at a time.
+create unique index if not exists register_one_open on public.register_sessions (shop_id)
+  where (data->>'closedAt') is null;
+-- One attendance row per person per day.
+create unique index if not exists attendance_day_key on public.attendance
+  ((data->>'staffId'), (data->>'date'));
+-- A month's salary is paid once.
+create unique index if not exists payroll_month_key on public.payroll_runs
+  ((data->>'staffId'), (data->>'month'));

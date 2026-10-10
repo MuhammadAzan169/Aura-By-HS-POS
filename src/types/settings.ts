@@ -31,7 +31,17 @@ export interface BillingSettings {
   maxShopDiscountPct: number;
 }
 
+export interface LoyaltySettings {
+  enabled: boolean;
+  /** Points earned per 100 of bill value. */
+  pointsPer100: number;
+  /** Money one point is worth when redeemed. */
+  pointValue: number;
+  minRedeemPoints: number;
+}
+
 export interface Settings {
+  loyalty?: LoyaltySettings;
   business: BusinessProfile;
   appointments: AppointmentRules;
   billing: BillingSettings;

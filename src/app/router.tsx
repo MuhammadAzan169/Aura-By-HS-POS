@@ -52,6 +52,13 @@ const NotificationsPage = lazy(() => import('@/features/notifications/Notificati
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const ShopProfilePage = lazy(() => import('@/features/settings/ShopProfilePage'));
 
+// -- Front desk extras
+const RegisterPage = lazy(() => import('@/features/register/RegisterPage'));
+const RewardsPage = lazy(() => import('@/features/rewards/RewardsPage'));
+const TeamPage = lazy(() => import('@/features/team/TeamPage'));
+const ActivityPage = lazy(() => import('@/features/activity/ActivityPage'));
+const FeedbackPage = lazy(() => import('@/features/activity/FeedbackPage'));
+
 export const router = createBrowserRouter([
   {
     element: <RedirectIfAuthenticated />,
@@ -98,6 +105,11 @@ export const router = createBrowserRouter([
               { path: 'expenses', element: <ExpensesPage /> },
               { path: 'reports', element: <ReportsPage /> },
 
+              { path: 'register', element: <RegisterPage /> },
+              { path: 'rewards', element: <RewardsPage /> },
+              { path: 'team', element: <TeamPage /> },
+              { path: 'activity', element: <ActivityPage /> },
+              { path: 'feedback', element: <FeedbackPage /> },
               { path: 'notifications', element: <NotificationsPage /> },
               { path: 'settings', element: <SettingsPage /> },
             ],
@@ -128,6 +140,11 @@ export const router = createBrowserRouter([
               { path: 'schedule', element: <StaffSchedulePage /> },
               { path: 'inventory', element: <InventoryPage /> },
 
+              { path: 'register', element: <RegisterPage /> },
+              { path: 'rewards', element: <RewardsPage /> },
+              { path: 'team', element: <TeamPage /> },
+              { path: 'activity', element: <ActivityPage /> },
+              { path: 'feedback', element: <FeedbackPage /> },
               { path: 'notifications', element: <NotificationsPage /> },
               { path: 'profile', element: <ShopProfilePage /> },
             ],

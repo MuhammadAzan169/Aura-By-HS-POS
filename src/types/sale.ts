@@ -16,7 +16,17 @@ export interface SaleItem {
   lineTotal: number;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'bank-transfer' | 'other';
+export type PaymentMethod =
+  | 'cash'
+  | 'card'
+  | 'bank-transfer'
+  | 'other'
+  /** Gift voucher; `reference` holds the voucher code. */
+  | 'voucher'
+  /** Loyalty points converted to money. */
+  | 'points'
+  /** The customer's advance / credit balance. */
+  | 'wallet';
 
 export interface Payment {
   id: string;
@@ -25,6 +35,9 @@ export interface Payment {
   /** Cash only: what the customer handed over, used to compute change. */
   tendered: number | null;
   reference: string | null;
+  /** When this payment was taken, for balances collected after the bill. */
+  at?: string;
+  byUserName?: string;
 }
 
 export type SaleStatus = 'completed' | 'refunded';
@@ -51,4 +64,13 @@ export interface Sale extends BaseRecord, ShopScoped {
   refundedAt: string | null;
   soldAt: string;
   notes: string;
+  /** Coupon applied to the bill discount, if any. */
+  couponCode?: string | null;
+  /** Gratuity on top of the bill; not revenue, owed to the stylist. */
+  tip?: number;
+  tipStaffId?: string | null;
+  /** Left to pay when the customer settles later ("udhaar"). */
+  balanceDue?: number;
+  /** Loyalty points this bill earned. */
+  pointsEarned?: number;
 }

@@ -1,3 +1,5 @@
+import { openWhatsApp } from '@/utils/whatsapp';
+import { MessageCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -187,6 +189,27 @@ export function AppointmentDrawer({
               </Button>
             );
           })}
+
+          {details.customer && !['completed', 'cancelled', 'no-show'].includes(appointment.status) && (
+            <Button
+              size="sm"
+              variant="outline"
+              leftIcon={<MessageCircle />}
+              onClick={() =>
+                openWhatsApp(
+                  details.customer?.phone,
+                  `Assalam o Alaikum ${details.customer?.name ?? ''}! This is a reminder of your appointment at ${
+                    db.shops.find((s) => s.id === appointment.shopId)?.name ?? db.settings.business.name
+                  } on ${formatDateTime(appointment.startAt)} for ${details.services
+                    .map((x) => x.service?.name)
+                    .filter(Boolean)
+                    .join(', ')}. Please reply to confirm. Thank you! 💐`,
+                )
+              }
+            >
+              Remind on WhatsApp
+            </Button>
+          )}
 
           {appointment.status === 'completed' && !appointment.saleId && (
             <Button size="sm" variant="accent" leftIcon={<Receipt />} onClick={createBill}>

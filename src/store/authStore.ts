@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
 import * as authService from '@/services/authService';
+import { setActivityActor } from '@/services/activityLog';
 
 interface AuthState {
   user: User | null;
@@ -25,7 +26,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   restore: async () => {
     try {
-      set({ user: await authService.restoreSession(), initialising: false });
+      const user = await authService.restoreSession();
+      setActivityActor(user);
+      set({ user, initialising: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Could not restore your session.';
       set({ user: null, initialising: false, error: message });
@@ -36,6 +39,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     set({ loggingIn: true, error: null });
     try {
       const session = await authService.login({ email, password });
+      setActivityActor(session.user);
       set({ user: session.user, loggingIn: false });
       return session.user;
     } catch (error) {
@@ -48,6 +52,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   logout: async () => {
     await authService.logout();
+    setActivityActor(null);
     set({ user: null, error: null });
   },
 

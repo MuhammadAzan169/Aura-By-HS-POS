@@ -1,3 +1,4 @@
+import { FrontDeskAlerts } from './components/FrontDeskAlerts';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -51,6 +52,8 @@ export function ShopDashboard(): JSX.Element {
         <QuickTile to="/shop/billing" icon={<Wallet />} label="New sale" primary />
         <QuickTile to="/shop/customers?new=1" icon={<UserPlus />} label="New customer" primary />
       </div>
+
+      <FrontDeskAlerts shopId={shop?.id ?? null} />
 
       {/* ---------------- Today at a glance ---------------- */}
       <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">

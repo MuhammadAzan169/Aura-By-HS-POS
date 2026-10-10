@@ -36,7 +36,9 @@ export function BillsPage(): JSX.Element {
   const basePath = pathname.startsWith('/admin') ? '/admin' : '/shop';
 
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<'all' | 'completed' | 'refunded'>('all');
+  const [status, setStatus] = useState<'all' | 'completed' | 'refunded' | 'unpaid'>(
+    new URLSearchParams(window.location.search).get('status') === 'unpaid' ? 'unpaid' : 'all',
+  );
   const [method, setMethod] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -61,7 +63,9 @@ export function BillsPage(): JSX.Element {
   const filtered = useMemo(
     () =>
       scoped.filter((sale) => {
-        if (status !== 'all' && sale.status !== status) return false;
+        if (status === 'unpaid') {
+          if (sale.status !== 'completed' || (sale.balanceDue ?? 0) <= 0) return false;
+        } else if (status !== 'all' && sale.status !== status) return false;
         if (method !== 'all' && !sale.payments.some((p) => p.method === method)) return false;
 
         const day = sale.soldAt.slice(0, 10);
@@ -137,6 +141,9 @@ export function BillsPage(): JSX.Element {
         { header: 'Total', value: (s) => s.total },
         { header: 'Payment', value: (s) => s.payments.map((p) => p.method).join(' + ') },
         { header: 'Status', value: (s) => s.status },
+        { header: 'Balance due', value: (s) => s.balanceDue ?? 0 },
+        { header: 'Tip', value: (s) => s.tip ?? 0 },
+        { header: 'Coupon', value: (s) => s.couponCode ?? '' },
       ],
       timestampedName('bills'),
     );
@@ -156,6 +163,9 @@ export function BillsPage(): JSX.Element {
           <p className="flex items-center gap-2 font-mono text-[13px] font-medium text-ink">
             {sale.receiptNo}
             {sale.status === 'refunded' && <Badge tone="danger">Refunded</Badge>}
+            {sale.status === 'completed' && (sale.balanceDue ?? 0) > 0 && (
+              <Badge tone="warn">Due {formatCurrency(sale.balanceDue ?? 0)}</Badge>
+            )}
           </p>
           <p className="text-xs text-muted">{formatDateTime(sale.soldAt)}</p>
         </div>
@@ -277,6 +287,7 @@ export function BillsPage(): JSX.Element {
               { value: 'all', label: 'All bills' },
               { value: 'completed', label: 'Completed' },
               { value: 'refunded', label: 'Refunded' },
+              { value: 'unpaid', label: 'Balance due' },
             ]}
           />
 

@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useCartStore } from '@/store/cartStore';
 import * as settingsService from '@/services/settingsService';
+import { formatCurrency } from '@/utils/money';
 import { changePassword } from '@/services/authService';
 import { isCloud } from '@/services/cloud/client';
 import { mutateDb } from '@/store/dataStore';
@@ -87,6 +88,7 @@ export function SettingsPage(): JSX.Element {
       </TabPanel>
       <TabPanel active={tab === 'billing'}>
         <BillingSection settings={settings} />
+        <LoyaltySection settings={settings} />
       </TabPanel>
       <TabPanel active={tab === 'notifications'}>
         <NotificationSection settings={settings} />
@@ -308,6 +310,37 @@ function AppointmentSection({ settings }: { settings: Settings }): JSX.Element {
 }
 
 // ------------------------------------------------------------------- billing
+
+function LoyaltySection({ settings }: { settings: Settings }): JSX.Element {
+  const current = settings.loyalty ?? { enabled: false, pointsPer100: 1, pointValue: 1, minRedeemPoints: 100 };
+  const [form, setForm] = useState(current);
+  const save = useAsyncAction(async () => settingsService.updateLoyalty(form), {
+    successMessage: 'Loyalty settings saved.',
+  });
+  return (
+    <Card className="mt-4 max-w-2xl">
+      <CardHeader
+        title="Loyalty points"
+        description="Customers earn points on every bill and spend them like money on a later visit."
+      />
+      <div className="mt-5 space-y-4">
+        <Switch label="Loyalty programme on" checked={form.enabled} onChange={(enabled) => setForm({ ...form, enabled })} />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Input label="Points per 100 spent" type="number" min={0} value={form.pointsPer100} onChange={(e) => setForm({ ...form, pointsPer100: Number(e.target.value) })} />
+          <Input label="Value of 1 point" type="number" min={0} step={0.1} value={form.pointValue} onChange={(e) => setForm({ ...form, pointValue: Number(e.target.value) })} />
+          <Input label="Minimum to redeem" type="number" min={0} value={form.minRedeemPoints} onChange={(e) => setForm({ ...form, minRedeemPoints: Number(e.target.value) })} />
+        </div>
+        <p className="text-xs text-muted">
+          Example: a {formatCurrency(10000)} bill earns {Math.floor(100 * form.pointsPer100)} points, worth{' '}
+          {formatCurrency(Math.floor(100 * form.pointsPer100) * form.pointValue)} next time.
+        </p>
+        <Button loading={save.pending} onClick={() => void save.run()}>
+          Save loyalty settings
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 function BillingSection({ settings }: { settings: Settings }): JSX.Element {
   const [form, setForm] = useState(settings.billing);

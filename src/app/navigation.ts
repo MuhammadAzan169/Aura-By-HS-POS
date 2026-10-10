@@ -6,6 +6,11 @@ import {
   CreditCard,
   FileBarChart,
   Gift,
+  History,
+  LockKeyhole,
+  Star,
+  TicketPercent,
+  UserCheck,
   LayoutDashboard,
   Package,
   Receipt,
@@ -49,6 +54,8 @@ export const ADMIN_NAV: NavSection[] = [
       { label: 'Appointments', to: '/admin/appointments', icon: CalendarDays },
       { label: 'Customers', to: '/admin/customers', icon: Users, match: '/admin/customers' },
       { label: 'Staff', to: '/admin/staff', icon: UserSquare2, match: '/admin/staff' },
+      { label: 'Attendance & Payroll', to: '/admin/team', icon: UserCheck },
+      { label: 'Feedback', to: '/admin/feedback', icon: Star },
     ],
   },
   {
@@ -65,6 +72,8 @@ export const ADMIN_NAV: NavSection[] = [
     label: 'Money',
     items: [
       { label: 'Sales & Billing', to: '/admin/billing', icon: CreditCard, match: '/admin/billing' },
+      { label: 'Day Close', to: '/admin/register', icon: LockKeyhole },
+      { label: 'Vouchers & Coupons', to: '/admin/rewards', icon: TicketPercent },
       { label: 'Expenses', to: '/admin/expenses', icon: Wallet },
       { label: 'Reports', to: '/admin/reports', icon: FileBarChart },
     ],
@@ -73,6 +82,7 @@ export const ADMIN_NAV: NavSection[] = [
     label: 'System',
     items: [
       { label: 'Notifications', to: '/admin/notifications', icon: Bell },
+      { label: 'Activity Log', to: '/admin/activity', icon: History },
       { label: 'Settings', to: '/admin/settings', icon: Settings },
     ],
   },
@@ -92,6 +102,8 @@ export const SHOP_NAV: NavSection[] = [
     items: [
       { label: 'Sales & Billing', to: '/shop/billing', icon: CreditCard, match: '/shop/billing', primary: true },
       { label: 'Customers', to: '/shop/customers', icon: Users, match: '/shop/customers', primary: true },
+      { label: 'Day Close', to: '/shop/register', icon: LockKeyhole },
+      { label: 'Gift Vouchers', to: '/shop/rewards', icon: Gift },
     ],
   },
   {
@@ -99,6 +111,8 @@ export const SHOP_NAV: NavSection[] = [
     items: [
       { label: 'Services', to: '/shop/services', icon: Scissors },
       { label: 'Staff Schedule', to: '/shop/schedule', icon: UserSquare2 },
+      { label: 'Attendance', to: '/shop/team', icon: UserCheck },
+      { label: 'Feedback', to: '/shop/feedback', icon: Star },
       { label: 'Inventory', to: '/shop/inventory', icon: Boxes },
       { label: 'Bills', to: '/shop/billing/bills', icon: Receipt },
     ],
@@ -107,6 +121,7 @@ export const SHOP_NAV: NavSection[] = [
     label: 'Account',
     items: [
       { label: 'Notifications', to: '/shop/notifications', icon: Bell },
+      { label: 'Activity Log', to: '/shop/activity', icon: History },
       { label: 'Shop Profile', to: '/shop/profile', icon: Store },
     ],
   },

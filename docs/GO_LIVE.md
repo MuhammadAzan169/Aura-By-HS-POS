@@ -7,6 +7,7 @@ About 30 minutes, once. You need a Google account and a GitHub account.
 1. Go to <https://supabase.com> → **New project**. Region: **Singapore** (closest to Pakistan).
    Save the database password somewhere safe.
 2. **SQL Editor → New query** → paste all of [`supabase/schema.sql`](../supabase/schema.sql) → **Run**.
+   Run it again after every update of the app — it only adds what is missing and never deletes data.
 3. **Project Settings → API**: copy the **Project URL** and the **anon public** key.
 
 ## 2. Google sign-in — free

@@ -26,6 +26,7 @@ export interface StaffInput {
   schedule: StaffShift[];
   timeOff: string[];
   commissionRate: number;
+  monthlySalary?: number;
   photoUrl: string | null;
 }
 
@@ -64,6 +65,7 @@ export async function create(input: StaffInput): Promise<Staff> {
     schedule: input.schedule,
     timeOff: input.timeOff,
     commissionRate: input.commissionRate,
+    monthlySalary: input.monthlySalary ?? 0,
     active: true,
     joinedOn: toISODate(new Date()),
   });

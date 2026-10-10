@@ -16,6 +16,14 @@ import type {
   Shop,
   Staff,
   User,
+  Voucher,
+  Coupon,
+  CustomerCredit,
+  RegisterSession,
+  Attendance,
+  Feedback,
+  PayrollRun,
+  ActivityEntry,
 } from '@/types';
 import { memberships, servicePackages, serviceCategories, services } from './catalog';
 import { credentials, shops, users } from './shops';
@@ -47,12 +55,20 @@ export interface Database {
   sales: Sale[];
   expenses: Expense[];
   notifications: AppNotification[];
+  vouchers: Voucher[];
+  coupons: Coupon[];
+  customerCredits: CustomerCredit[];
+  registerSessions: RegisterSession[];
+  attendance: Attendance[];
+  feedback: Feedback[];
+  payrollRuns: PayrollRun[];
+  activity: ActivityEntry[];
   settings: Settings;
   /** Bumped whenever the seed shape changes, so stale saves are discarded. */
   schemaVersion: number;
 }
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /**
  * Builds the full demo dataset. Everything is derived from `today` so the demo
@@ -101,6 +117,14 @@ export function createSeedDatabase(today: Date = new Date()): Database {
     sales,
     expenses,
     notifications,
+    vouchers: [],
+    coupons: [],
+    customerCredits: [],
+    registerSessions: [],
+    attendance: [],
+    feedback: [],
+    payrollRuns: [],
+    activity: [],
     settings: { ...defaultSettings },
     schemaVersion: SCHEMA_VERSION,
   };

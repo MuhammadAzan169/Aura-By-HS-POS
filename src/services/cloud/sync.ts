@@ -36,10 +36,21 @@ export const TABLES: Record<RowTable, string> = {
   sales: 'sales',
   expenses: 'expenses',
   notifications: 'notifications',
+  vouchers: 'vouchers',
+  coupons: 'coupons',
+  customerCredits: 'customer_credits',
+  registerSessions: 'register_sessions',
+  attendance: 'attendance',
+  feedback: 'feedback',
+  payrollRuns: 'payroll_runs',
+  activity: 'activity_log',
 };
 
 const SETTINGS_TABLE = 'app_settings';
-const UPDATE_ONLY = new Set<RowTable>(['users', 'shops']);
+const UPDATE_ONLY = new Set<RowTable>(['users', 'shops', 'vouchers']);
+/** Never deleted from the database by the app, and only recent rows are loaded. */
+const APPEND_ONLY = new Set<RowTable>(['activity']);
+const RECENT_DAYS = 90;
 const SETTINGS_ID = 'global';
 const PAGE = 1000;
 
@@ -66,15 +77,15 @@ export function emptyDatabase(): Database {
   };
 }
 
-async function fetchAll(table: string): Promise<unknown[]> {
+async function fetchAll(table: string, sinceDays?: number): Promise<unknown[]> {
   const sb = requireSupabase();
   const out: unknown[] = [];
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await sb
-      .from(table)
-      .select('data')
-      .order('id')
-      .range(from, from + PAGE - 1);
+    let query = sb.from(table).select('data');
+    if (sinceDays) {
+      query = query.gte('updated_at', new Date(Date.now() - sinceDays * 86_400_000).toISOString());
+    }
+    const { data, error } = await query.order('id').range(from, from + PAGE - 1);
     if (error) throw new Error(`Could not load ${table}: ${error.message}`);
     out.push(...(data ?? []).map((r: { data: unknown }) => r.data));
     if (!data || data.length < PAGE) return out;
@@ -86,7 +97,7 @@ export async function loadAll(): Promise<Database> {
   const db = emptyDatabase();
   const keys = Object.keys(TABLES) as RowTable[];
   const [rows, settingsRows] = await Promise.all([
-    Promise.all(keys.map((k) => fetchAll(TABLES[k]))),
+    Promise.all(keys.map((k) => fetchAll(TABLES[k], APPEND_ONLY.has(k) ? RECENT_DAYS : undefined))),
     fetchAll(SETTINGS_TABLE),
   ]);
   keys.forEach((k, i) => {
@@ -119,7 +130,7 @@ function diff(prev: Database, next: Database): Op[] {
     }
     if (upserts.length) ops.push({ kind: 'upsert', table: TABLES[key], rows: upserts });
     if (updates.length) ops.push({ kind: 'update', table: TABLES[key], rows: updates });
-    if (old.size) ops.push({ kind: 'delete', table: TABLES[key], ids: [...old.keys()] });
+    if (old.size && !APPEND_ONLY.has(key)) ops.push({ kind: 'delete', table: TABLES[key], ids: [...old.keys()] });
   }
   if (prev.settings !== next.settings) {
     ops.push({ kind: 'upsert', table: SETTINGS_TABLE, rows: [{ id: SETTINGS_ID, data: next.settings }] });

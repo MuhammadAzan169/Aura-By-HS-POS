@@ -1,4 +1,4 @@
-import type { AppointmentRules, BillingSettings, BusinessProfile, NotificationType, Settings } from '@/types';
+import type { AppointmentRules, BillingSettings, BusinessProfile, LoyaltySettings, NotificationType, Settings } from '@/types';
 import { configureCurrency } from '@/utils/money';
 import { commit, delay, nowISO, read } from './db';
 
@@ -69,5 +69,12 @@ export function readImageAsDataUrl(file: File, maxBytes = 512_000): Promise<stri
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error('That image could not be read.'));
     reader.readAsDataURL(file);
+  });
+}
+
+export async function updateLoyalty(input: LoyaltySettings): Promise<Settings> {
+  return commit((db) => {
+    db.settings = { ...db.settings, loyalty: input, updatedAt: nowISO() };
+    return db.settings;
   });
 }

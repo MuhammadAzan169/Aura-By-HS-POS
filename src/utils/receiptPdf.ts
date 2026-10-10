@@ -21,6 +21,9 @@ const METHOD_LABELS: Record<string, string> = {
   card: 'Card',
   'bank-transfer': 'Bank transfer',
   other: 'Other',
+  voucher: 'Gift voucher',
+  points: 'Loyalty points',
+  wallet: 'Advance',
 };
 
 function paymentMethodLabel(method: string): string {
@@ -147,7 +150,7 @@ export function buildReceiptPdf({ sale, shop, staff, settings }: ReceiptPdfInput
   y += 6;
   const totals: Array<[string, string]> = [['Subtotal', money(sale.subtotal, settings)]];
   if (sale.membershipDiscount > 0) totals.push(['Membership discount', `-${money(sale.membershipDiscount, settings)}`]);
-  if (sale.billDiscount > 0) totals.push(['Bill discount', `-${money(sale.billDiscount, settings)}`]);
+  if (sale.billDiscount > 0) totals.push([sale.couponCode ? `Coupon ${sale.couponCode}` : 'Bill discount', `-${money(sale.billDiscount, settings)}`]);
   totals.push([`Tax (${sale.taxRate}%)`, money(sale.taxAmount, settings)]);
   for (const [label, value] of totals) {
     doc.setTextColor(...MUTED);
@@ -174,6 +177,26 @@ export function buildReceiptPdf({ sale, shop, staff, settings }: ReceiptPdfInput
     doc.text(`Paid by ${paymentMethodLabel(p.method)}${p.reference ? ` (${p.reference})` : ''}`, M, y);
     doc.setTextColor(30, 26, 23);
     doc.text(money(p.tendered ?? p.amount, settings), W - M, y, { align: 'right' });
+    y += 5;
+  }
+  if ((sale.tip ?? 0) > 0) {
+    doc.setTextColor(...MUTED);
+    doc.text('Tip', M, y);
+    doc.setTextColor(30, 26, 23);
+    doc.text(money(sale.tip ?? 0, settings), W - M, y, { align: 'right' });
+    y += 5;
+  }
+  if ((sale.balanceDue ?? 0) > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(180, 30, 40);
+    doc.text('Balance due', M, y);
+    doc.text(money(sale.balanceDue ?? 0, settings), W - M, y, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    y += 5;
+  }
+  if ((sale.pointsEarned ?? 0) > 0) {
+    doc.setTextColor(...MUTED);
+    doc.text(`Loyalty points earned: +${sale.pointsEarned}`, M, y);
     y += 5;
   }
   if (sale.changeGiven > 0) {

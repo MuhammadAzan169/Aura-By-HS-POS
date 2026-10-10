@@ -31,6 +31,8 @@ const schema = z.object({
   preferredStaffId: z.string().nullable(),
   sensitivities: z.string().max(300, 'Keep this under 300 characters'),
   notes: z.string().max(500, 'Keep this under 500 characters'),
+  birthday: z.string(),
+  anniversary: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -83,6 +85,8 @@ export function CustomerFormModal({
       preferredStaffId: null,
       sensitivities: '',
       notes: '',
+      birthday: '',
+      anniversary: '',
     },
   });
 
@@ -97,6 +101,8 @@ export function CustomerFormModal({
       preferredStaffId: customer?.preferredStaffId ?? null,
       sensitivities: customer?.sensitivities ?? '',
       notes: customer?.notes ?? '',
+      birthday: customer?.birthday ?? '',
+      anniversary: customer?.anniversary ?? '',
     });
   }, [open, customer, initialName, reset]);
 
@@ -112,6 +118,8 @@ export function CustomerFormModal({
         preferredServiceIds: customer?.preferredServiceIds ?? [],
         sensitivities: values.sensitivities,
         notes: values.notes,
+        birthday: values.birthday || null,
+        anniversary: values.anniversary || null,
       };
       return customer
         ? customerService.update(customer.id, payload)
@@ -216,6 +224,11 @@ export function CustomerFormModal({
           error={errors.sensitivities?.message}
           {...register('sensitivities')}
         />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Birthday (optional)" type="date" hint="For birthday wishes and offers." {...register('birthday')} />
+          <Input label="Wedding anniversary (optional)" type="date" {...register('anniversary')} />
+        </div>
 
         <Textarea
           label="Notes"

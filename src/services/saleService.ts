@@ -8,6 +8,7 @@ import { applyMovementSync, notifyStockThresholds } from './inventoryService';
 import { attachSale } from './appointmentService';
 import { discountPctFor } from './customerService';
 import { raise } from './notificationService';
+import { applyTenders, pointsFor, reverseTenders, validateCoupon, validateTenders } from './rewardsService';
 
 export interface CheckoutInput {
   shopId: string;
@@ -19,6 +20,12 @@ export interface CheckoutInput {
   billDiscount: BillDiscountInput;
   payments: Payment[];
   notes: string;
+  /** Promotion code; replaces any manual bill discount. */
+  couponCode?: string | null;
+  tip?: number;
+  tipStaffId?: string | null;
+  /** Let a known customer leave part of the bill to pay later. */
+  payLater?: boolean;
 }
 
 export async function list(shopId: string | null): Promise<Sale[]> {
@@ -67,8 +74,21 @@ export async function checkout(input: CheckoutInput, actor: User): Promise<Sale>
   const db = read();
   const settings = db.settings;
 
-  // A shop user may not exceed the ceiling the owner set.
-  if (actor.role === 'shop' && input.billDiscount.mode === 'percent') {
+  const couponCode = input.couponCode?.trim().toUpperCase() || null;
+  let billDiscount = input.billDiscount;
+  if (couponCode) {
+    const preview = calculateBill({
+      items: input.items,
+      billDiscount: { mode: 'percent', value: 0 },
+      membershipDiscountPct: discountPctFor(input.customerId),
+      taxRatePct: settings.billing.taxRatePct,
+    });
+    const coupon = validateCoupon(couponCode, input.shopId, preview.subtotal, db);
+    billDiscount = { mode: coupon.mode, value: coupon.value };
+  }
+
+  // A shop user may not exceed the ceiling the owner set (a coupon was approved by them already).
+  if (!couponCode && actor.role === 'shop' && input.billDiscount.mode === 'percent') {
     if (input.billDiscount.value > settings.billing.maxShopDiscountPct) {
       throw new ServiceError(
         `Discounts above ${settings.billing.maxShopDiscountPct}% need the owner's approval.`,
@@ -93,18 +113,30 @@ export async function checkout(input: CheckoutInput, actor: User): Promise<Sale>
   const membershipPct = discountPctFor(input.customerId);
   const totals = calculateBill({
     items: input.items,
-    billDiscount: input.billDiscount,
+    billDiscount,
     membershipDiscountPct: membershipPct,
     taxRatePct: settings.billing.taxRatePct,
   });
 
+  const tip = round2(Math.max(0, input.tip ?? 0));
+  const payable = round2(totals.total + tip);
   const paid = paidTotal(input.payments);
-  if (round2(paid) < totals.total) {
-    throw new ServiceError(
-      `Payment is short by ${formatCurrency(totals.total - paid)}.`,
-      'validation',
-    );
+  let balanceDue = 0;
+  if (round2(paid) < payable) {
+    if (!input.payLater) {
+      throw new ServiceError(`Payment is short by ${formatCurrency(payable - paid)}.`, 'validation');
+    }
+    if (!input.customerId) {
+      throw new ServiceError('Pick a saved customer to leave a balance to pay later.', 'validation');
+    }
+    balanceDue = round2(payable - paid);
   }
+  validateTenders({ customerId: input.customerId, payments: input.payments }, db);
+
+  // Points are earned on what was paid in money, not on points themselves.
+  const paidWithPoints = input.payments.filter((p) => p.method === 'points').reduce((s, p) => s + p.amount, 0);
+  const pointsEarned = input.customerId ? pointsFor(Math.max(0, totals.total - paidWithPoints - balanceDue), db) : 0;
+  const at = nowISO();
 
   const sale: Sale = stamped({
     id: uid('sal'),
@@ -122,8 +154,13 @@ export async function checkout(input: CheckoutInput, actor: User): Promise<Sale>
     taxRate: settings.billing.taxRatePct,
     taxAmount: totals.taxAmount,
     total: totals.total,
-    payments: input.payments,
+    payments: input.payments.map((p) => ({ ...p, at, byUserName: actor.name })),
     changeGiven: changeFor(input.payments),
+    couponCode,
+    tip,
+    tipStaffId: tip > 0 ? (input.tipStaffId ?? input.staffId) : null,
+    balanceDue,
+    pointsEarned,
     status: 'completed' as const,
     refundReason: null,
     refundedAt: null,
@@ -135,6 +172,7 @@ export async function checkout(input: CheckoutInput, actor: User): Promise<Sale>
 
   const saved = await commit((current) => {
     current.sales = [sale, ...current.sales];
+    applyTenders(current, sale, actor);
 
     for (const item of sale.items) {
       if (item.kind !== 'product') continue;
@@ -203,6 +241,7 @@ export async function refund(id: string, reason: string, actor: User): Promise<S
       updatedAt: nowISO(),
     };
     db.sales = db.sales.map((s) => (s.id === id ? next : s));
+    reverseTenders(db, existing, actor);
 
     for (const item of existing.items) {
       if (item.kind !== 'product') continue;
@@ -248,4 +287,49 @@ export function revenueOf(sales: Sale[]): number {
   return round2(
     sales.filter((s) => s.status === 'completed').reduce((sum, s) => sum + s.total, 0),
   );
+}
+
+/** Bills with money still owed, oldest first. */
+export function unpaidSales(shopId: string | null): Sale[] {
+  return scopeTo(read().sales, shopId)
+    .filter((s) => s.status === 'completed' && (s.balanceDue ?? 0) > 0)
+    .sort((a, b) => a.soldAt.localeCompare(b.soldAt));
+}
+
+export function customerBalanceDue(customerId: string): number {
+  return round2(
+    read()
+      .sales.filter((s) => s.customerId === customerId && s.status === 'completed')
+      .reduce((sum, s) => sum + (s.balanceDue ?? 0), 0),
+  );
+}
+
+/** Settles some or all of what is still owed on a bill. */
+export async function collectBalance(
+  id: string,
+  payment: Pick<Payment, 'method' | 'amount' | 'reference'>,
+  actor: User,
+): Promise<Sale> {
+  const existing = requireRow(read().sales.find((s) => s.id === id), 'That bill');
+  const due = existing.balanceDue ?? 0;
+  if (existing.status !== 'completed' || due <= 0) throw new ServiceError('Nothing is owed on this bill.', 'conflict');
+  const amount = round2(payment.amount);
+  if (!(amount > 0)) throw new ServiceError('Enter the amount received.', 'validation');
+  if (amount > due + 0.001) throw new ServiceError(`Only ${formatCurrency(due)} is owed.`, 'validation');
+  if (['voucher', 'points', 'wallet'].includes(payment.method)) {
+    throw new ServiceError('Collect balances in cash, card or transfer.', 'validation');
+  }
+  return commit((db) => {
+    const next: Sale = {
+      ...existing,
+      payments: [
+        ...existing.payments,
+        { id: uid('pay'), method: payment.method, amount, tendered: null, reference: payment.reference, at: nowISO(), byUserName: actor.name },
+      ],
+      balanceDue: round2(due - amount),
+      updatedAt: nowISO(),
+    };
+    db.sales = db.sales.map((s) => (s.id === id ? next : s));
+    return next;
+  });
 }

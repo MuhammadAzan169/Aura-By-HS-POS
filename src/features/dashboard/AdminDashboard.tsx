@@ -1,3 +1,4 @@
+import { FrontDeskAlerts } from './components/FrontDeskAlerts';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -141,6 +142,8 @@ export function AdminDashboard(): JSX.Element {
           </>
         }
       />
+
+      <FrontDeskAlerts shopId={isAllShops ? null : (shop?.id ?? null)} />
 
       {/* ---------------- KPI row ---------------- */}
       <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">

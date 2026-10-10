@@ -11,3 +11,4 @@ export * from './sale';
 export * from './expense';
 export * from './notification';
 export * from './settings';
+export * from './extras';

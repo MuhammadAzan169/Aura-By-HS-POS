@@ -10,6 +10,12 @@ export const defaultSettings: Settings = {
     addressLine: '14-C, MM Alam Road, Gulberg III',
     city: 'Lahore',
   },
+  loyalty: {
+    enabled: true,
+    pointsPer100: 1,
+    pointValue: 1,
+    minRedeemPoints: 100,
+  },
   appointments: {
     defaultDurationMin: 45,
     slotIntervalMin: 15,

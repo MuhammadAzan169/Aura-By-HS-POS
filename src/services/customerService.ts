@@ -8,7 +8,7 @@ import { raise } from './notificationService';
 export type CustomerInput = Pick<
   Customer,
   'name' | 'phone' | 'email' | 'gender' | 'preferredStaffId' | 'preferredServiceIds' | 'sensitivities' | 'notes'
-> & { shopId: string };
+> & { shopId: string; birthday?: string | null; anniversary?: string | null };
 
 export async function list(shopId: string | null): Promise<Customer[]> {
   return delay(scopeTo(read().customers, shopId));
@@ -56,6 +56,8 @@ export async function create(input: CustomerInput): Promise<Customer> {
     notes: input.notes.trim(),
     active: true,
     firstVisitOn: null,
+    birthday: input.birthday ?? null,
+    anniversary: input.anniversary ?? null,
   });
 
   const saved = await commit((db) => {

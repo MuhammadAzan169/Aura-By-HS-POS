@@ -8,6 +8,9 @@ const METHOD_LABELS: Record<string, string> = {
   card: 'Card',
   'bank-transfer': 'Bank transfer',
   other: 'Other',
+  voucher: 'Gift voucher',
+  points: 'Loyalty points',
+  wallet: 'Advance',
 };
 
 /**
@@ -112,7 +115,11 @@ export function Receipt({ sale }: { sale: Sale }): JSX.Element {
         )}
 
         {sale.billDiscount > 0 && (
-          <Line label="Bill discount" value={`−${formatCurrency(sale.billDiscount)}`} muted />
+          <Line
+            label={sale.couponCode ? `Coupon ${sale.couponCode}` : 'Bill discount'}
+            value={`−${formatCurrency(sale.billDiscount)}`}
+            muted
+          />
         )}
 
         <Line label={`Tax (${sale.taxRate}%)`} value={formatCurrency(sale.taxAmount)} />
@@ -124,6 +131,12 @@ export function Receipt({ sale }: { sale: Sale }): JSX.Element {
           {formatCurrency(sale.total)}
         </span>
       </div>
+
+      {(sale.tip ?? 0) > 0 && (
+        <dl className="border-t border-dashed border-line py-2 text-xs">
+          <Line label="Tip" value={formatCurrency(sale.tip ?? 0)} />
+        </dl>
+      )}
 
       {/* ---- Payment ---- */}
       <dl className="space-y-1.5 border-t border-dashed border-line py-3 text-xs">
@@ -137,6 +150,15 @@ export function Receipt({ sale }: { sale: Sale }): JSX.Element {
 
         {sale.changeGiven > 0 && (
           <Line label="Change given" value={formatCurrency(sale.changeGiven)} />
+        )}
+        {(sale.balanceDue ?? 0) > 0 && (
+          <div className="flex justify-between gap-2 font-semibold">
+            <dt className="text-danger">Balance due</dt>
+            <dd className="tabular-nums text-danger">{formatCurrency(sale.balanceDue ?? 0)}</dd>
+          </div>
+        )}
+        {(sale.pointsEarned ?? 0) > 0 && (
+          <Line label="Loyalty points earned" value={`+${sale.pointsEarned}`} />
         )}
       </dl>
 

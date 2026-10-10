@@ -34,6 +34,7 @@ export function StaffFormModal({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [commission, setCommission] = useState('12');
+  const [salary, setSalary] = useState('0');
   const [schedule, setSchedule] = useState<StaffShift[]>(defaultSchedule());
   const [specializations, setSpecializations] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export function StaffFormModal({
     setPhone(member?.phone ?? '');
     setEmail(member?.email ?? '');
     setCommission(String(Math.round((member?.commissionRate ?? 0.12) * 100)));
+    setSalary(String(member?.monthlySalary ?? 0));
     setSchedule(member?.schedule ?? defaultSchedule());
     setSpecializations(member?.specializations ?? []);
     setError(null);
@@ -76,6 +78,7 @@ export function StaffFormModal({
         schedule,
         timeOff: member?.timeOff ?? [],
         commissionRate: (Number(commission) || 0) / 100,
+        monthlySalary: Math.max(0, Number(salary) || 0),
         photoUrl: member?.photoUrl ?? null,
       };
       return member ? staffService.update(member.id, payload) : staffService.create(payload);
@@ -193,6 +196,17 @@ export function StaffFormModal({
               value={commission}
               onChange={(e) => setCommission(e.target.value)}
               hint="Share of the revenue they generate, used in reports and payroll."
+              className="sm:max-w-[12rem]"
+            />
+
+            <Input
+              label="Monthly salary"
+              type="number"
+              min={0}
+              step={1000}
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              hint="Fixed pay before commission and tips. Used on the payroll sheet."
               className="sm:max-w-[12rem]"
             />
 

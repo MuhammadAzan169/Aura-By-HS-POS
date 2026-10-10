@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { createSeedDatabase, SCHEMA_VERSION, type Database } from '@/mock/seed';
 import { storageKey } from '@/utils/storage';
 import { isCloud } from '@/services/cloud/client';
+import { recordActivity } from '@/services/activityLog';
 
 /**
  * localStorage throws once the origin's quota is exhausted, and in private
@@ -116,6 +117,9 @@ export const useDataStore = create<DataState>()(
         const prev = get().db;
         const next: Database = { ...prev };
         recipe(next);
+        recordActivity(prev, next);
+        // Offline the log lives in the browser, so it is kept to a sensible size.
+        if (!isCloud && next.activity.length > 2000) next.activity = next.activity.slice(0, 2000);
         set({ db: next });
         mutationListener?.(prev, next);
       },

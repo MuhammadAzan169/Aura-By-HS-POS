@@ -13,6 +13,9 @@ export interface Customer extends BaseRecord, ShopScoped {
   active: boolean;
   /** yyyy-MM-dd, or null until the first completed visit. */
   firstVisitOn: string | null;
+  /** MM-dd or yyyy-MM-dd; used for birthday greetings. */
+  birthday?: string | null;
+  anniversary?: string | null;
 }
 
 /** Always derived from appointments and sales, never stored. */

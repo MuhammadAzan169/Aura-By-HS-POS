@@ -33,6 +33,8 @@ export interface Staff extends BaseRecord, ShopScoped {
   timeOff: string[];
   /** Share of service revenue paid as commission, 0-1. */
   commissionRate: number;
+  /** Fixed monthly salary before commission, in currency units. */
+  monthlySalary?: number;
   active: boolean;
   joinedOn: string;
 }

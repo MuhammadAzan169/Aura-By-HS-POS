@@ -60,6 +60,16 @@ rebuilds exactly the same starting dataset.
 Dashboard · Shops · Appointments · Customers · Staff · Services · Packages · Memberships ·
 Products · Inventory · Sales & Billing · Expenses · Reports · Notifications · Settings
 
+### Front-desk and money features (both portals)
+Gift vouchers (sell, WhatsApp the code, redeem at any branch) · Coupon codes (dates, uses,
+minimum bill, per branch) · Loyalty points (earn per spend, redeem at the till) · Customer
+advances / deposits (e.g. bridal bookings) · Pay later with balances due and collection ·
+Tips credited to the stylist · Day close: opening float, cash in/out, expected vs counted, PDF
+report · Attendance (clock in/out, late, leave) and Payroll (salary + commission + tips −
+absences, payslip PDF, booked to expenses) · Customer feedback and ratings · Birthday and
+anniversary reminders · WhatsApp bills, reminders and greetings · Automatic activity log of
+every change.
+
 ### Shop portal
 Dashboard · Appointments · Customers · Sales & Billing · Services (read-only) · Staff Schedule ·
 Inventory · Notifications · Shop Profile
