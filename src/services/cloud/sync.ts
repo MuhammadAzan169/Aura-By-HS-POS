@@ -1,7 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/mock/seed';
 import type { Settings } from '@/types';
-import { defaultSettings } from '@/mock/settings';
+import { liveDefaultSettings as defaultSettings } from '@/services/defaults';
 import { SCHEMA_VERSION } from '@/mock/seed';
 import { applyRemote, getDb, replaceDb, setMutationListener } from '@/store/dataStore';
 import { requireSupabase } from './client';

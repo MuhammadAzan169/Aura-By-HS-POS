@@ -3,6 +3,7 @@ import { readJSON, removeKey, writeJSON } from '@/utils/storage';
 import { delay, read, ServiceError, write } from './db';
 import { isCloud, requireSupabase } from './cloud/client';
 import { startSync, stopSync } from './cloud/sync';
+import { loginEmail } from './loginService';
 
 /**
  * Mock authentication. This is the ONLY file that knows how a user is
@@ -114,19 +115,6 @@ export async function loginWithGoogle(): Promise<void> {
   if (error) throw new ServiceError(error.message, 'forbidden');
 }
 
-/** First-time password for an invited email. Supabase emails a confirmation link. */
-export async function createPassword(email: string, password: string): Promise<string> {
-  if (!isCloud) throw new ServiceError('Accounts can only be created when the database is connected.');
-  if (password.length < 8) throw new ServiceError('Use at least 8 characters for the password.');
-  const { error } = await requireSupabase().auth.signUp({
-    email: email.trim().toLowerCase(),
-    password,
-    options: { emailRedirectTo: returnUrl('/login') },
-  });
-  if (error) throw new ServiceError(error.message);
-  return `Check ${email} for a confirmation link, then sign in with this password.`;
-}
-
 /** Sets a new password for the signed-in account (after a reset link). */
 export async function setNewPassword(password: string): Promise<void> {
   if (password.length < 8) throw new ServiceError('Use at least 8 characters for the password.');
@@ -137,7 +125,7 @@ export async function setNewPassword(password: string): Promise<void> {
 export async function login({ email, password }: LoginInput): Promise<Session> {
   if (isCloud) {
     const { error } = await requireSupabase().auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: loginEmail(email),
       password,
     });
     if (error) {
@@ -157,7 +145,7 @@ export async function login({ email, password }: LoginInput): Promise<Session> {
   await delay(null, 320);
 
   const db = read();
-  const normalized = email.trim().toLowerCase();
+  const normalized = loginEmail(email);
   const credential = db.credentials.find((c) => c.email.toLowerCase() === normalized);
 
   // Deliberately identical message for unknown email and wrong password.

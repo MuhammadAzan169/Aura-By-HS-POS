@@ -1,4 +1,4 @@
-import type { AppointmentRules, BillingSettings, BusinessProfile, LoyaltySettings, NotificationType, Settings } from '@/types';
+import type { AppointmentRules, BillDesign, BillingSettings, BusinessProfile, LoyaltySettings, NotificationType, Settings } from '@/types';
 import { configureCurrency } from '@/utils/money';
 import { commit, delay, nowISO, read } from './db';
 
@@ -75,6 +75,13 @@ export function readImageAsDataUrl(file: File, maxBytes = 512_000): Promise<stri
 export async function updateLoyalty(input: LoyaltySettings): Promise<Settings> {
   return commit((db) => {
     db.settings = { ...db.settings, loyalty: input, updatedAt: nowISO() };
+    return db.settings;
+  });
+}
+
+export async function updateBillDesign(input: BillDesign): Promise<Settings> {
+  return commit((db) => {
+    db.settings = { ...db.settings, billDesign: input, updatedAt: nowISO() };
     return db.settings;
   });
 }

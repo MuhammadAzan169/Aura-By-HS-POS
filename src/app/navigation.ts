@@ -6,6 +6,7 @@ import {
   CreditCard,
   FileBarChart,
   Gift,
+  KeyRound,
   History,
   LockKeyhole,
   Star,
@@ -82,6 +83,7 @@ export const ADMIN_NAV: NavSection[] = [
     label: 'System',
     items: [
       { label: 'Notifications', to: '/admin/notifications', icon: Bell },
+      { label: 'Users & Logins', to: '/admin/users', icon: KeyRound },
       { label: 'Activity Log', to: '/admin/activity', icon: History },
       { label: 'Settings', to: '/admin/settings', icon: Settings },
     ],

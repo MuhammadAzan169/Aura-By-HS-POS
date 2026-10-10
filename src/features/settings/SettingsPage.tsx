@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   CalendarCog,
+  FileText,
   Download,
   Sparkles,
   KeyRound,
@@ -23,6 +24,7 @@ import { useCartStore } from '@/store/cartStore';
 import * as settingsService from '@/services/settingsService';
 import { formatCurrency } from '@/utils/money';
 import { changePassword } from '@/services/authService';
+import { BillDesignSection } from './BillDesignSection';
 import { isCloud } from '@/services/cloud/client';
 import { mutateDb } from '@/store/dataStore';
 import { flush } from '@/services/cloud/sync';
@@ -33,7 +35,6 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Tabs, TabPanel } from '@/components/ui/Tabs';
 import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
 import { Switch } from '@/components/ui/Switch';
 import { Avatar } from '@/components/ui/Avatar';
 
@@ -51,7 +52,7 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   'membership-expiring': 'A membership is about to lapse',
 };
 
-type TabValue = 'business' | 'appointments' | 'billing' | 'notifications' | 'account' | 'data';
+type TabValue = 'business' | 'appointments' | 'billing' | 'bill-design' | 'notifications' | 'account' | 'data';
 
 export function SettingsPage(): JSX.Element {
   const db = useDb();
@@ -73,6 +74,7 @@ export function SettingsPage(): JSX.Element {
             { value: 'business', label: 'Business', icon: <Building2 /> },
             { value: 'appointments', label: 'Appointments', icon: <CalendarCog /> },
             { value: 'billing', label: 'Billing', icon: <Receipt /> },
+            { value: 'bill-design', label: 'Bill design', icon: <FileText /> },
             { value: 'notifications', label: 'Notifications', icon: <Bell /> },
             { value: 'account', label: 'My account', icon: <UserCircle2 /> },
             { value: 'data', label: 'Data', icon: <RotateCcw /> },
@@ -89,6 +91,9 @@ export function SettingsPage(): JSX.Element {
       <TabPanel active={tab === 'billing'}>
         <BillingSection settings={settings} />
         <LoyaltySection settings={settings} />
+      </TabPanel>
+      <TabPanel active={tab === 'bill-design'}>
+        <BillDesignSection settings={settings} />
       </TabPanel>
       <TabPanel active={tab === 'notifications'}>
         <NotificationSection settings={settings} />
@@ -398,20 +403,10 @@ function BillingSection({ settings }: { settings: Settings }): JSX.Element {
           />
         </div>
 
-        <Input
-          label="Receipt header"
-          value={form.receiptHeader}
-          onChange={(e) => setForm({ ...form, receiptHeader: e.target.value })}
-          hint="Used when a branch has no name of its own"
-        />
-
-        <Textarea
-          label="Receipt footer"
-          rows={2}
-          value={form.receiptFooter}
-          onChange={(e) => setForm({ ...form, receiptFooter: e.target.value })}
-          hint="Small print at the bottom of every receipt"
-        />
+        <p className="rounded-xl bg-canvas px-3.5 py-3 text-xs text-muted">
+          The bill's look — paper size, title, terms, footer, which lines appear — is set under the
+          <strong className="text-ink"> Bill design</strong> tab.
+        </p>
 
         <Button loading={save.pending} onClick={() => void save.run()}>
           Save billing settings

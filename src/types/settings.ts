@@ -40,7 +40,37 @@ export interface LoyaltySettings {
   minRedeemPoints: number;
 }
 
+export interface BillDesign {
+  paperSize: 'A4' | 'A5' | '80mm';
+  /** Printed at the top, e.g. "INVOICE", "BILL", "RECEIPT". */
+  title: string;
+  /** Hex colour for the header band and totals. */
+  accentColor: string;
+  fontScale: 'sm' | 'md' | 'lg';
+  showLogo: boolean;
+  showBusinessName: boolean;
+  showBranchAddress: boolean;
+  showBranchPhone: boolean;
+  showTaxNumber: boolean;
+  /** NTN / STRN printed under the header when shown. */
+  taxNumber: string;
+  showCustomerPhone: boolean;
+  showServedBy: boolean;
+  showLineDiscounts: boolean;
+  showTax: boolean;
+  showPayments: boolean;
+  showAmountInWords: boolean;
+  showLoyaltyPoints: boolean;
+  showSignature: boolean;
+  signatureLabel: string;
+  showTerms: boolean;
+  terms: string;
+  /** Last line, e.g. social handles or "Follow us @aurabyhs". */
+  footerNote: string;
+}
+
 export interface Settings {
+  billDesign?: BillDesign;
   loyalty?: LoyaltySettings;
   business: BusinessProfile;
   appointments: AppointmentRules;

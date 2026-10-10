@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { useMemo, useState } from 'react';
 import { Clock, Gift, Pencil, Plus, Tag } from 'lucide-react';
 import type { ServicePackage } from '@/types';
@@ -22,6 +24,7 @@ import { PackageFormModal } from './PackageFormModal';
 export function PackagesPage(): JSX.Element {
   const db = useDb();
   const confirm = useConfirm();
+  const del = useDeleteAction();
 
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
@@ -212,6 +215,19 @@ export function PackagesPage(): JSX.Element {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => void onToggle(pkg)}>
                       {pkg.active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        void del({
+                          title: `Delete ${pkg.name}?`,
+                          run: () => deleteService.deletePackage(pkg.id),
+                          done: `${pkg.name} deleted.`,
+                        })
+                      }
+                    >
+                      Delete
                     </Button>
                   </div>
                 </div>

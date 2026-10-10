@@ -194,3 +194,41 @@ export function lowStockProducts(shopId: string | null): Product[] {
     .filter((p) => p.active && stockStatus(p) !== 'in-stock')
     .sort((a, b) => a.stock - b.stock);
 }
+
+/**
+ * Moves stock from one branch to another. The receiving branch's product is
+ * matched by SKU, or created with the same details if it has never stocked it.
+ * Both sides get a movement line, so each branch's history explains itself.
+ */
+export async function transferStock(
+  productId: string,
+  toShopId: string,
+  quantity: number,
+  note: string,
+  actor: User,
+): Promise<void> {
+  const db0 = read();
+  const source = db0.products.find((p) => p.id === productId);
+  if (!source) throw new ServiceError('That product could not be found.', 'not-found');
+  if (toShopId === source.shopId) throw new ServiceError('Pick a different branch to send it to.', 'validation');
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new ServiceError('Enter how many to send.', 'validation');
+  if (quantity > source.stock) {
+    throw new ServiceError(`Only ${source.stock} ${source.unit}${source.stock === 1 ? '' : 's'} in stock to send.`, 'insufficient-stock');
+  }
+  const fromName = db0.shops.find((s) => s.id === source.shopId)?.name ?? 'another branch';
+  const toName = db0.shops.find((s) => s.id === toShopId)?.name ?? 'another branch';
+  await commit((db) => {
+    let dest = db.products.find(
+      (p) => p.shopId === toShopId && p.sku.trim().toLowerCase() === source.sku.trim().toLowerCase(),
+    );
+    if (!dest) {
+      dest = stamped({ ...source, id: uid('prd'), shopId: toShopId, stock: 0 });
+      db.products = [...db.products, dest];
+    }
+    const ref = uid('trf');
+    const suffix = note.trim() ? ` — ${note.trim()}` : '';
+    applyMovementSync(db, { productId: source.id, type: 'transfer', quantity: -quantity, reason: `Sent to ${toName}${suffix}`, referenceId: ref }, actor);
+    applyMovementSync(db, { productId: dest.id, type: 'transfer', quantity, reason: `Received from ${fromName}${suffix}`, referenceId: ref }, actor);
+  });
+  notifyStockThresholds([productId]);
+}

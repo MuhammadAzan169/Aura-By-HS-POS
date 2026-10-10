@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -44,6 +46,7 @@ export function CustomerDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const confirm = useConfirm();
+  const del = useDeleteAction();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
   const cart = useCartStore();
 
@@ -328,6 +331,22 @@ export function CustomerDetailPage(): JSX.Element {
               onClick={() => void onToggleActive()}
             >
               {customer.active ? 'Deactivate customer' : 'Reactivate customer'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-4"
+              onClick={() =>
+                void del({
+                  title: `Delete ${customer.name}?`,
+                  description: 'Only customers with no bills, bookings or advances can be deleted.',
+                  run: () => deleteService.deleteCustomer(customer.id),
+                  done: `${customer.name} deleted.`,
+                  onDone: () => navigate(-1),
+                })
+              }
+            >
+              Delete customer
             </Button>
           </Card>
         </div>

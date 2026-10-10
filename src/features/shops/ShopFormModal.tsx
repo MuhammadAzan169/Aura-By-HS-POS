@@ -1,4 +1,3 @@
-import { isCloud } from '@/services/cloud/client';
 import { useEffect, useState } from 'react';
 import type { BusinessHours, Shop } from '@/types';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
@@ -32,7 +31,7 @@ export function ShopFormModal({ open, onClose, shop }: ShopFormModalProps): JSX.
 
   const [accountName, setAccountName] = useState('');
   const [accountEmail, setAccountEmail] = useState('');
-  const [accountPassword, setAccountPassword] = useState('shop123');
+  const [accountPassword, setAccountPassword] = useState('');
 
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +49,7 @@ export function ShopFormModal({ open, onClose, shop }: ShopFormModalProps): JSX.
     setHours(shop?.businessHours ?? defaultBusinessHours());
     setAccountName('');
     setAccountEmail('');
-    setAccountPassword('shop123');
+    setAccountPassword('');
     setError(null);
   }, [open, shop]);
 
@@ -103,8 +102,8 @@ export function ShopFormModal({ open, onClose, shop }: ShopFormModalProps): JSX.
       setTab('hours');
       return;
     }
-    if (!isEdit && !accountEmail.trim()) {
-      setError('The branch needs a login email.');
+    if (!isEdit && (!accountEmail.trim() || accountPassword.length < 6)) {
+      setError('The branch needs a login username and a password of at least 6 characters.');
       setTab('account');
       return;
     }
@@ -253,29 +252,22 @@ export function ShopFormModal({ open, onClose, shop }: ShopFormModalProps): JSX.
               />
 
               <Input
-                label="Login email"
+                label="Login username"
                 required
-                type="email"
-                placeholder="gulberg@aurabyhs.pk"
+                placeholder="gulberg"
                 value={accountEmail}
                 onChange={(e) => setAccountEmail(e.target.value)}
+                hint="What the branch types to sign in. Letters and numbers, no spaces."
               />
 
-              {isCloud ? (
-                <p className="rounded-xl border border-info/25 bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-ink">
-                  This email is the branch's invitation. The branch signs in with{' '}
-                  <strong>Continue with Google</strong> using this address, or picks{' '}
-                  <strong>Create a password</strong> on the sign-in screen. No one else can get in.
-                </p>
-              ) : (
-                <Input
-                  label="Temporary password"
-                  required
-                  value={accountPassword}
-                  onChange={(e) => setAccountPassword(e.target.value)}
-                  hint="Demo mode only — online, branches sign in with Google or their own password."
-                />
-              )}
+              <Input
+                label="Password"
+                required
+                type="text"
+                value={accountPassword}
+                onChange={(e) => setAccountPassword(e.target.value)}
+                hint="At least 6 characters. Only you (the owner) can change it later, from Users & logins."
+              />
             </div>
           </TabPanel>
         )}

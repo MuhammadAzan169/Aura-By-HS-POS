@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { KeyRound, Mail, MapPin, Pencil, Phone, Store, Users, Wallet } from 'lucide-react';
+import { KeyRound, MapPin, Pencil, Phone, Store, Users, Wallet } from 'lucide-react';
 import { formatCurrency } from '@/utils/money';
 import { formatClock, formatDate, WEEKDAY_LABELS } from '@/utils/date';
 import { useDb } from '@/hooks/useDb';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import * as shopService from '@/services/shopService';
-import { sendPasswordReset } from '@/services/authService';
+import { loginLabel, setPassword } from '@/services/loginService';
+import { Input } from '@/components/ui/Input';
 import { periodFor, revenueSeries, shopComparison } from '@/services/reportService';
 import { performance as staffPerformance } from '@/services/staffService';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -25,6 +26,7 @@ export function ShopDetailPage(): JSX.Element {
   const db = useDb();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'profile' | 'staff' | 'performance' | 'account'>('profile');
+  const [newPassword, setNewPassword] = useState('');
   const [editOpen, setEditOpen] = useState(false);
 
   const shop = db.shops.find((s) => s.id === shopId);
@@ -47,8 +49,11 @@ export function ShopDetailPage(): JSX.Element {
   }, [shop, db]);
 
   const reset = useAsyncAction(
-    async (email: string) => sendPasswordReset(email),
-    { successMessage: (message) => message },
+    async (email: string) => {
+      await setPassword(email, newPassword);
+      setNewPassword('');
+    },
+    { successMessage: 'Password changed. The branch signs in with it from now on.' },
   );
 
   if (!shop || !data) {
@@ -286,7 +291,7 @@ export function ShopDetailPage(): JSX.Element {
             <>
               <dl className="mt-4 divide-y divide-line text-sm">
                 <Row label="Account name" value={data.account.name} />
-                <Row label="Email" value={data.account.email} />
+                <Row label="Username" value={loginLabel(data.account.email)} />
                 <Row label="Role" value="Shop (single branch)" />
                 <Row
                   label="Last signed in"
@@ -305,24 +310,31 @@ export function ShopDetailPage(): JSX.Element {
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium text-ink">Reset the password</p>
+                    <p className="text-[13px] font-medium text-ink">Set a new password</p>
                     <p className="mt-0.5 text-xs text-muted">
-                      Sends a reset link to {data.account.email}. This needs the backend connected
-                      before it will actually send anything.
+                      Branch staff cannot change their own password — only you can. Tell them the new
+                      one in person. More logins for this branch: Users & logins.
                     </p>
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  leftIcon={<Mail />}
-                  loading={reset.pending}
-                  onClick={() => void reset.run(data.account!.email)}
-                >
-                  Send reset link
-                </Button>
+                <div className="mt-3 flex flex-wrap items-end gap-2">
+                  <Input
+                    label="New password"
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <Button
+                    variant="outline"
+                    leftIcon={<KeyRound />}
+                    loading={reset.pending}
+                    disabled={newPassword.length < 6}
+                    onClick={() => void reset.run(data.account!.email)}
+                  >
+                    Save password
+                  </Button>
+                </div>
               </div>
             </>
           ) : (

@@ -13,6 +13,8 @@ import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useAuthStore } from '@/store/authStore';
 import * as rewards from '@/services/rewardsService';
+import { deleteVoucher } from '@/services/deleteService';
+import { useDeleteAction } from '@/hooks/useDeleteAction';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -62,6 +64,7 @@ function VouchersTab(): JSX.Element {
   const actor = useAuthStore((s) => s.user);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const del = useDeleteAction();
   const [form, setForm] = useState({
     value: '5000',
     recipientName: '',
@@ -208,6 +211,22 @@ function VouchersTab(): JSX.Element {
                         {actor?.role === 'admin' && (
                           <Button variant="ghost" size="sm" onClick={() => void rewards.setVoucherActive(v.id, !v.active)}>
                             {v.active ? 'Cancel' : 'Restore'}
+                          </Button>
+                        )}
+                        {actor?.role === 'admin' && v.balance === v.initialValue && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              void del({
+                                title: `Delete voucher ${v.code}?`,
+                                description: 'For a voucher issued by mistake. Give the customer their money back separately.',
+                                run: () => deleteVoucher(v.id),
+                                done: 'Voucher deleted.',
+                              })
+                            }
+                          >
+                            Delete
                           </Button>
                         )}
                       </td>

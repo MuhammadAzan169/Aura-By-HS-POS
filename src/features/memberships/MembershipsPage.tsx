@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { useEffect, useMemo, useState } from 'react';
 import { BadgePercent, Check, Pencil, Plus, Users } from 'lucide-react';
 import type { Membership } from '@/types';
@@ -24,6 +26,7 @@ import { EmptyState } from '@/components/ui/States';
 export function MembershipsPage(): JSX.Element {
   const db = useDb();
   const confirm = useConfirm();
+  const del = useDeleteAction();
   const [editing, setEditing] = useState<Membership | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -187,6 +190,19 @@ export function MembershipsPage(): JSX.Element {
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => void onToggle(tier)}>
                     {tier.active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      void del({
+                        title: `Delete ${tier.name}?`,
+                        run: () => deleteService.deleteMembership(tier.id),
+                        done: `${tier.name} deleted.`,
+                      })
+                    }
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>

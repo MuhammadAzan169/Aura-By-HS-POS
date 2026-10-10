@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { downloadExcel } from '@/utils/excel';
 import { ImportModal } from '@/components/shared/ImportModal';
 import * as importService from '@/services/importService';
@@ -35,6 +37,7 @@ export function ProductsPage(): JSX.Element {
   const db = useDb();
   const { shopId, isAllShops } = useShopScope();
   const actor = useAuthStore((s) => s.user);
+  const del = useDeleteAction();
   const [importOpen, setImportOpen] = useState(false);
   const confirm = useConfirm();
 
@@ -365,6 +368,20 @@ export function ProductsPage(): JSX.Element {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => void onToggle(product)}>
               {product.active ? 'Discontinue' : 'Restore'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                void del({
+                  title: `Delete ${product.name}?`,
+                  description: 'Only products that were never sold can be deleted. Its stock history goes too.',
+                  run: () => deleteService.deleteProduct(product.id),
+                  done: `${product.name} deleted.`,
+                })
+              }
+            >
+              Delete
             </Button>
           </div>
         )}

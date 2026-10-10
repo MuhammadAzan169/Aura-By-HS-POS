@@ -9,6 +9,8 @@ import { useDb } from '@/hooks/useDb';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useAuthStore } from '@/store/authStore';
 import * as rewards from '@/services/rewardsService';
+import { deleteCredit } from '@/services/deleteService';
+import { useDeleteAction } from '@/hooks/useDeleteAction';
 import { customerBalanceDue } from '@/services/saleService';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +25,7 @@ import { Select } from '@/components/ui/Select';
 export function CustomerAccountCard({ customer }: { customer: Customer }): JSX.Element {
   const db = useDb();
   const actor = useAuthStore((s) => s.user);
+  const del = useDeleteAction();
   const { pathname } = useLocation();
   const base = pathname.startsWith('/admin') ? '/admin' : '/shop';
   const advance = rewards.creditBalance(customer.id, db);
@@ -117,9 +120,23 @@ export function CustomerAccountCard({ customer }: { customer: Customer }): JSX.E
               <span className="text-muted">
                 {formatDateTime(c.createdAt)} · {c.note || c.kind}
               </span>
-              <span className={c.amount >= 0 ? 'tabular-nums text-ok' : 'tabular-nums text-danger'}>
-                {c.amount >= 0 ? '+' : '−'}
-                {formatCurrency(Math.abs(c.amount))}
+              <span className="flex items-center gap-2">
+                <span className={c.amount >= 0 ? 'tabular-nums text-ok' : 'tabular-nums text-danger'}>
+                  {c.amount >= 0 ? '+' : '−'}
+                  {formatCurrency(Math.abs(c.amount))}
+                </span>
+                {actor?.role === 'admin' && !c.saleId && (
+                  <button
+                    type="button"
+                    aria-label="Delete entry"
+                    className="text-subtle hover:text-danger"
+                    onClick={() =>
+                      void del({ title: 'Delete this entry?', description: 'Use this only to correct a mistake.', run: () => deleteCredit(c.id), done: 'Entry deleted.' })
+                    }
+                  >
+                    ×
+                  </button>
+                )}
               </span>
             </li>
           ))}

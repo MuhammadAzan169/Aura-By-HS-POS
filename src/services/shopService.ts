@@ -1,3 +1,4 @@
+import { createLogin, loginEmail, loginLabel } from './loginService';
 import { isSameDay, parseISO } from 'date-fns';
 import type { BusinessHours, Shop, User } from '@/types';
 import { uid } from '@/utils/id';
@@ -16,10 +17,11 @@ export interface ShopInput {
   businessHours: BusinessHours;
   receiptFooter: string;
   logoUrl: string | null;
+  billOverride?: Shop['billOverride'];
 }
 
 export interface ShopWithAccount extends ShopInput {
-  /** Login email for the branch account created alongside the shop. */
+  /** Username (or email) for the branch login created alongside the shop. */
   accountEmail: string;
   accountName: string;
   accountPassword: string;
@@ -59,15 +61,16 @@ function assertCodeFree(code: string, exceptId?: string): void {
   }
 }
 
-/** Creating a branch also creates the login account that branch will use. */
+/** Creating a branch also creates the login the branch will sign in with. */
 export async function create(input: ShopWithAccount): Promise<Shop> {
   assertCodeFree(input.code);
-
-  const emailTaken = read().users.some(
-    (u) => u.email.toLowerCase() === input.accountEmail.trim().toLowerCase(),
-  );
-  if (emailTaken) {
-    throw new ServiceError('That login email is already in use by another account.', 'conflict');
+  if (!input.name.trim()) throw new ServiceError('Enter the branch name.', 'validation');
+  const email = loginEmail(input.accountEmail);
+  if (read().users.some((u) => u.email.toLowerCase() === email)) {
+    throw new ServiceError(`The username "${loginLabel(email)}" is already taken.`, 'conflict');
+  }
+  if (input.accountPassword.length < 6) {
+    throw new ServiceError('Give the branch login a password of at least 6 characters.', 'validation');
   }
 
   const shop: Shop = stamped({
@@ -86,27 +89,18 @@ export async function create(input: ShopWithAccount): Promise<Shop> {
     openedOn: toISODate(new Date()),
   });
 
-  const user: User = stamped({
-    id: uid('usr'),
-    email: input.accountEmail.trim().toLowerCase(),
-    name: input.accountName.trim(),
-    role: 'shop' as const,
-    shopId: shop.id,
-    avatarUrl: null,
-    phone: input.phone.trim(),
-    active: true,
-    lastLoginAt: null,
-  });
-
-  return commit((db) => {
+  const saved = await commit((db) => {
     db.shops = [...db.shops, shop];
-    db.users = [...db.users, user];
-    db.credentials = [
-      ...db.credentials,
-      { userId: user.id, email: user.email, password: input.accountPassword },
-    ];
     return shop;
   });
+  await createLogin({
+    name: input.accountName.trim() || `${shop.name} desk`,
+    username: input.accountEmail,
+    password: input.accountPassword,
+    shopId: shop.id,
+    phone: input.phone,
+  });
+  return saved;
 }
 
 export async function update(id: string, input: Partial<ShopInput>): Promise<Shop> {

@@ -4,6 +4,9 @@ import { formatDateTime } from '@/utils/date';
 import { useDb } from '@/hooks/useDb';
 import { useShopScope } from '@/hooks/useShopScope';
 import { averageRating } from '@/services/feedbackService';
+import { deleteFeedback } from '@/services/deleteService';
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import { useAuthStore } from '@/store/authStore';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { StatCard } from '@/components/ui/StatCard';
@@ -13,6 +16,8 @@ import { EmptyState } from '@/components/ui/States';
 export function FeedbackPage(): JSX.Element {
   const db = useDb();
   const { shopId } = useShopScope();
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
+  const del = useDeleteAction();
   const rows = useMemo(
     () => db.feedback.filter((f) => shopId === null || f.shopId === shopId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     [db.feedback, shopId],
@@ -47,9 +52,20 @@ export function FeedbackPage(): JSX.Element {
                     <span className="text-accent">{stars(f.rating)}</span>
                   </div>
                   {f.comment && <p className="mt-1 text-sm text-ink">“{f.comment}”</p>}
-                  <p className="mt-1 text-xs text-subtle">
+                  <p className="mt-1 flex items-center gap-2 text-xs text-subtle">
                     {formatDateTime(f.createdAt)}
                     {f.staffId && ` · ${db.staff.find((s) => s.id === f.staffId)?.name ?? ''}`}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="ml-auto text-danger hover:underline"
+                        onClick={() =>
+                          void del({ title: 'Delete this feedback?', run: () => deleteFeedback(f.id), done: 'Feedback deleted.' })
+                        }
+                      >
+                        Delete
+                      </button>
+                    )}
                   </p>
                 </li>
               ))}

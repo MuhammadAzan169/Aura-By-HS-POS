@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CalendarOff, Mail, Pencil, Phone, Plus, Scissors, UserX, Wallet } from 'lucide-react';
@@ -26,6 +28,7 @@ export function StaffDetailPage(): JSX.Element {
   const db = useDb();
   const navigate = useNavigate();
   const confirm = useConfirm();
+  const del = useDeleteAction();
 
   const [tab, setTab] = useState<'overview' | 'schedule' | 'appointments'>('overview');
   const [editOpen, setEditOpen] = useState(false);
@@ -143,6 +146,20 @@ export function StaffDetailPage(): JSX.Element {
               onClick={() => void onToggleActive()}
             >
               {member.active ? 'Deactivate' : 'Reactivate'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                void del({
+                  title: `Delete ${member.name}?`,
+                  description: 'Only staff with no appointments, bills or salary records can be deleted.',
+                  run: () => deleteService.deleteStaff(member.id),
+                  done: `${member.name} deleted.`,
+                  onDone: () => navigate(-1),
+                })
+              }
+            >
+              Delete
             </Button>
           </>
         }

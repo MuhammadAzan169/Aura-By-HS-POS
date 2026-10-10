@@ -4,6 +4,7 @@ import { createSeedDatabase, SCHEMA_VERSION, type Database } from '@/mock/seed';
 import { storageKey } from '@/utils/storage';
 import { isCloud } from '@/services/cloud/client';
 import { recordActivity } from '@/services/activityLog';
+import { liveDefaultSettings } from '@/services/defaults';
 
 /**
  * localStorage throws once the origin's quota is exhausted, and in private
@@ -95,7 +96,7 @@ function emptyDb(): Database {
   const empty = Object.fromEntries(
     Object.entries(seed).map(([k, v]) => [k, Array.isArray(v) ? [] : v]),
   ) as unknown as Database;
-  return empty;
+  return { ...empty, settings: liveDefaultSettings };
 }
 
 type MutationListener = (prev: Database, next: Database) => void;

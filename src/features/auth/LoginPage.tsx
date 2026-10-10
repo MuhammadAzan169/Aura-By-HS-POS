@@ -11,13 +11,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { isCloud } from '@/services/cloud/client';
 import {
-  createPassword,
   loginWithGoogle,
   sendPasswordReset,
   setNewPassword,
 } from '@/services/authService';
 
-type Mode = 'signin' | 'create' | 'forgot';
+type Mode = 'signin' | 'forgot';
 
 function GoogleIcon(): JSX.Element {
   return (
@@ -66,7 +65,7 @@ function SetNewPassword({ onDone }: { onDone: () => void }): JSX.Element {
 }
 
 const schema = z.object({
-  email: z.string().min(1, 'Enter your email address').email('That does not look like an email address'),
+  email: z.string().trim().min(1, 'Enter your username or email'),
   password: z.string(),
 });
 
@@ -121,11 +120,7 @@ export function LoginPage(): JSX.Element {
     if (mode !== 'signin') {
       setBusy(true);
       try {
-        setNotice(
-          mode === 'create'
-            ? await createPassword(values.email, values.password)
-            : await sendPasswordReset(values.email),
-        );
+        setNotice(await sendPasswordReset(values.email));
         setMode('signin');
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -245,14 +240,12 @@ export function LoginPage(): JSX.Element {
           ) : (
           <>
           <h2 className="font-display text-2xl font-semibold text-ink">
-            {mode === 'create' ? 'Create your password' : mode === 'forgot' ? 'Reset your password' : 'Welcome back'}
+            {mode === 'forgot' ? 'Reset the owner password' : 'Welcome back'}
           </h2>
           <p className="mt-1 text-sm text-muted">
-            {mode === 'create'
-              ? 'Use the email the owner added for your branch.'
-              : mode === 'forgot'
-                ? 'We will email you a link to choose a new one.'
-                : 'Sign in to manage your salon.'}
+            {mode === 'forgot'
+              ? 'For the owner’s email account. Branch passwords are reset by the owner.'
+              : 'Sign in to manage your salon.'}
           </p>
 
           {notice && (
@@ -294,10 +287,11 @@ export function LoginPage(): JSX.Element {
 
           <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
             <Input
-              label="Email address"
-              type="email"
+              label={mode === 'forgot' ? 'Owner email address' : 'Username or email'}
+              type="text"
               autoComplete="username"
-              placeholder="you@aurabyhs.pk"
+              autoCapitalize="none"
+              placeholder={mode === 'forgot' ? 'owner@gmail.com' : 'gulberg  or  you@gmail.com'}
               leftIcon={<Mail />}
               error={errors.email?.message}
               {...register('email')}
@@ -305,9 +299,9 @@ export function LoginPage(): JSX.Element {
 
             {mode !== 'forgot' && (
               <Input
-                label={mode === 'create' ? 'New password' : 'Password'}
+                label="Password"
                 type="password"
-                autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 leftIcon={<Lock />}
                 error={errors.password?.message}
@@ -322,7 +316,7 @@ export function LoginPage(): JSX.Element {
               loading={loggingIn || busy}
               rightIcon={<ArrowRight />}
             >
-              {mode === 'create' ? 'Create password' : mode === 'forgot' ? 'Send reset link' : 'Sign in'}
+              {mode === 'forgot' ? 'Send reset link' : 'Sign in'}
             </Button>
           </form>
 
@@ -330,9 +324,7 @@ export function LoginPage(): JSX.Element {
             <div className="mt-4 flex flex-wrap justify-between gap-2 text-[13px]">
               {mode === 'signin' ? (
                 <>
-                  <button type="button" className="text-brand hover:underline" onClick={() => setMode('create')}>
-                    First time? Create a password
-                  </button>
+                  <span className="text-xs text-subtle">Branch login? Your owner gives you the username and password.</span>
                   <button type="button" className="text-muted hover:underline" onClick={() => setMode('forgot')}>
                     Forgot password?
                   </button>

@@ -37,7 +37,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { EmptyState } from '@/components/ui/States';
-import { Download } from 'lucide-react';
+import { ArrowRightLeft, Download } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 
 type StockAction = 'add' | 'remove' | 'adjust';
 
@@ -60,6 +61,8 @@ export function InventoryPage(): JSX.Element {
   const [status, setStatus] = useState<'all' | 'in-stock' | 'low' | 'out'>('all');
   const [action, setAction] = useState<{ product: Product; kind: StockAction } | null>(null);
   const [historyFor, setHistoryFor] = useState<Product | null>(null);
+  const [transferFor, setTransferFor] = useState<Product | null>(null);
+  const canTransfer = useAuthStore((s) => s.user?.role === 'admin') && db.shops.length > 1;
 
   const debounced = useDebounce(search);
 
@@ -393,6 +396,17 @@ export function InventoryPage(): JSX.Element {
               >
                 History
               </Button>
+              {canTransfer && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<ArrowRightLeft />}
+                  disabled={product.stock === 0}
+                  onClick={() => setTransferFor(product)}
+                >
+                  Transfer
+                </Button>
+              )}
             </div>
           )}
         />
@@ -410,6 +424,7 @@ export function InventoryPage(): JSX.Element {
 
       <StockActionModal action={action} onClose={() => setAction(null)} />
       <HistoryModal product={historyFor} onClose={() => setHistoryFor(null)} />
+      <TransferModal product={transferFor} onClose={() => setTransferFor(null)} />
     </>
   );
 }
@@ -630,6 +645,54 @@ function HistoryModal({
           ))}
         </ul>
       )}
+    </Modal>
+  );
+}
+
+function TransferModal({ product, onClose }: { product: Product | null; onClose: () => void }): JSX.Element {
+  const db = useDb();
+  const actor = useAuthStore((s) => s.user);
+  const others = db.shops.filter((s) => s.id !== product?.shopId && s.active);
+  const [to, setTo] = useState('');
+  const [qty, setQty] = useState('1');
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    if (!product) return;
+    setTo(others[0]?.id ?? '');
+    setQty('1');
+    setNote('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
+  const send = useAsyncAction(
+    async () => {
+      if (!product || !actor) throw new Error('Pick a product.');
+      return inventoryService.transferStock(product.id, to, Number(qty), note, actor);
+    },
+    { successMessage: 'Stock transferred. Both branches show it in their history.', onSuccess: onClose },
+  );
+  return (
+    <Modal
+      open={product !== null}
+      onClose={onClose}
+      title={`Send ${product?.name ?? ''} to another branch`}
+      description={product ? `${product.stock} ${product.unit}s in stock here.` : undefined}
+      size="sm"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button loading={send.pending} disabled={!to} onClick={() => void send.run()}>
+            Transfer
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Select label="To branch" value={to} onChange={(e) => setTo(e.target.value)} options={others.map((s) => ({ value: s.id, label: s.name }))} />
+        <Input label="Quantity" type="number" min={1} max={product?.stock} value={qty} onChange={(e) => setQty(e.target.value)} />
+        <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+      </div>
     </Modal>
   );
 }

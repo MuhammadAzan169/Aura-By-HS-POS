@@ -283,3 +283,101 @@ create unique index if not exists attendance_day_key on public.attendance
 -- A month's salary is paid once.
 create unique index if not exists payroll_month_key on public.payroll_runs
   ((data->>'staffId'), (data->>'month'));
+
+-- ===========================================================================
+-- Logins the owner controls.
+--
+-- Branch staff do not sign themselves up and cannot change their own
+-- passwords: the owner creates each login with a username and password, and is
+-- the only person who can reset it. These functions run with the database's
+-- own rights so the owner can do this from the browser without any server or
+-- secret key — and each one refuses to run for anyone but an active owner.
+--
+-- A username becomes <username>@staff.aurabyhs.pk behind the scenes; that
+-- address receives no mail and the account is created already confirmed.
+-- ===========================================================================
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
+
+create or replace function public.admin_set_login(p_email text, p_password text) returns uuid
+language plpgsql security definer set search_path = public, extensions, auth as $$
+declare
+  em  text := lower(trim(p_email));
+  uid uuid;
+begin
+  if not public.is_admin() then
+    raise exception 'Only the owner can create or change logins.' using errcode = 'P0001';
+  end if;
+  if length(coalesce(p_password, '')) < 6 then
+    raise exception 'Use a password of at least 6 characters.' using errcode = 'P0001';
+  end if;
+  if em !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
+    raise exception 'That username is not valid.' using errcode = 'P0001';
+  end if;
+  -- An owner may not reset another owner's password from here.
+  if exists (select 1 from public.profiles where email = em and role = 'admin') and em <> public.auth_email() then
+    raise exception 'Owner passwords are changed by the owner.' using errcode = 'P0001';
+  end if;
+
+  perform set_config('aura.pw_admin', 'on', true);
+
+  select id into uid from auth.users where lower(email) = em limit 1;
+  if uid is null then
+    uid := gen_random_uuid();
+    insert into auth.users (
+      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change_token_new, email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', em,
+      crypt(p_password, gen_salt('bf')), now(),
+      '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now(),
+      '', '', '', ''
+    );
+    insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    values (gen_random_uuid(), uid, uid::text,
+            jsonb_build_object('sub', uid::text, 'email', em, 'email_verified', true),
+            'email', now(), now(), now());
+  else
+    update auth.users
+      set encrypted_password = crypt(p_password, gen_salt('bf')),
+          email_confirmed_at = coalesce(email_confirmed_at, now()),
+          updated_at = now()
+      where id = uid;
+  end if;
+  return uid;
+end $$;
+
+-- Removes a login entirely (the profile row is the owner's to delete separately).
+create or replace function public.admin_delete_login(p_email text) returns void
+language plpgsql security definer set search_path = public, auth as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Only the owner can remove logins.' using errcode = 'P0001';
+  end if;
+  if lower(trim(p_email)) = public.auth_email() then
+    raise exception 'You cannot remove your own login.' using errcode = 'P0001';
+  end if;
+  delete from auth.users where lower(email) = lower(trim(p_email));
+end $$;
+
+revoke all on function public.admin_set_login(text, text) from public, anon;
+revoke all on function public.admin_delete_login(text) from public, anon;
+grant execute on function public.admin_set_login(text, text), public.admin_delete_login(text) to authenticated;
+
+-- A branch login cannot change its own password — not from the app, and not by
+-- calling the auth API directly. Only admin_set_login() above may.
+create or replace function public.guard_branch_password() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.encrypted_password is distinct from old.encrypted_password
+     and coalesce(current_setting('aura.pw_admin', true), '') <> 'on'
+     and exists (select 1 from public.profiles where email = lower(old.email) and role = 'shop') then
+    raise exception 'Only the owner can change this password.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists guard_branch_password on auth.users;
+create trigger guard_branch_password before update on auth.users
+  for each row execute function public.guard_branch_password();

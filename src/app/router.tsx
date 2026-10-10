@@ -58,6 +58,7 @@ const RewardsPage = lazy(() => import('@/features/rewards/RewardsPage'));
 const TeamPage = lazy(() => import('@/features/team/TeamPage'));
 const ActivityPage = lazy(() => import('@/features/activity/ActivityPage'));
 const FeedbackPage = lazy(() => import('@/features/activity/FeedbackPage'));
+const UsersPage = lazy(() => import('@/features/users/UsersPage'));
 
 export const router = createBrowserRouter([
   {
@@ -112,6 +113,7 @@ export const router = createBrowserRouter([
               { path: 'feedback', element: <FeedbackPage /> },
               { path: 'notifications', element: <NotificationsPage /> },
               { path: 'settings', element: <SettingsPage /> },
+              { path: 'users', element: <UsersPage /> },
             ],
           },
         ],

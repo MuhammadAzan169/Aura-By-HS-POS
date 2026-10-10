@@ -1,3 +1,5 @@
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, MapPin, Phone, Plus, Store, Users } from 'lucide-react';
@@ -20,6 +22,7 @@ export function ShopsPage(): JSX.Element {
   const db = useDb();
   const navigate = useNavigate();
   const confirm = useConfirm();
+  const del = useDeleteAction();
   const [formOpen, setFormOpen] = useState(false);
 
   const rows = useMemo(() => summarise(), [db]);
@@ -153,6 +156,20 @@ export function ShopsPage(): JSX.Element {
                   onClick={() => void onToggle(shop.id, shop.name, shop.active)}
                 >
                   {shop.active ? 'Deactivate' : 'Activate'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    void del({
+                      title: `Delete ${shop.name}?`,
+                      description: 'Only a branch with no bills, bookings, customers or logins can be deleted.',
+                      run: () => deleteService.deleteShop(shop.id),
+                      done: `${shop.name} deleted.`,
+                    })
+                  }
+                >
+                  Delete
                 </Button>
               </div>
             </Card>

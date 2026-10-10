@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, Download, Lock, Unlock, Wallet } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Download, Lock, MessageCircle, Unlock, Wallet } from 'lucide-react';
+import { openWhatsApp } from '@/utils/whatsapp';
 import type { RegisterSession } from '@/types';
 import { cn } from '@/utils/cn';
 import { formatCurrency } from '@/utils/money';
@@ -77,6 +78,24 @@ export function RegisterPage(): JSX.Element {
       },
     },
   );
+
+  const sendSummary = (s: RegisterSession): void => {
+    const sum = registerService.summarise(s, db);
+    const d = s.difference ?? 0;
+    const lines = [
+      `*Day close — ${db.shops.find((x) => x.id === s.shopId)?.name ?? ''}*`,
+      formatDateTime(s.closedAt ?? s.openedAt),
+      '',
+      `Bills: ${sum.bills}  ·  Sales: ${formatCurrency(sum.grossSales)}`,
+      `Cash ${formatCurrency(sum.byMethod.cash)} · Card ${formatCurrency(sum.byMethod.card)} · Transfer ${formatCurrency(sum.byMethod['bank-transfer'])}`,
+      `Discounts ${formatCurrency(sum.discounts)} · Tips ${formatCurrency(sum.tips)} · Refunds ${formatCurrency(sum.refundedValue)}`,
+      '',
+      `Expected cash: ${formatCurrency(s.expectedCash ?? sum.expectedCash)}`,
+      s.countedCash !== null ? `Counted: ${formatCurrency(s.countedCash)} (${d === 0 ? 'balanced' : `${d > 0 ? 'over' : 'short'} ${formatCurrency(Math.abs(d))}`})` : '',
+      `Closed by ${s.closedBy ?? ''}`,
+    ].filter((l) => l !== null);
+    openWhatsApp(db.settings.business.phone, lines.join('\n'));
+  };
 
   const downloadZ = async (s: RegisterSession): Promise<void> => {
     const { downloadRegisterPdf } = await import('./registerPdf');
@@ -241,6 +260,9 @@ export function RegisterPage(): JSX.Element {
                     <td className="px-5 py-2.5 text-right">
                       <Button variant="ghost" size="sm" leftIcon={<Download />} onClick={() => void downloadZ(s)}>
                         PDF
+                      </Button>
+                      <Button variant="ghost" size="sm" leftIcon={<MessageCircle />} onClick={() => sendSummary(s)}>
+                        WhatsApp
                       </Button>
                     </td>
                   </tr>

@@ -2,6 +2,7 @@ import type { Sale } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/date';
 import { useDb } from '@/hooks/useDb';
+import { designFor } from '@/services/billDesign';
 
 const METHOD_LABELS: Record<string, string> = {
   cash: 'Cash',
@@ -171,9 +172,9 @@ export function Receipt({ sale }: { sale: Sale }): JSX.Element {
       {/* ---- Footer ---- */}
       <footer className="border-t border-dashed border-line pt-3 text-center">
         <p className="text-xs leading-relaxed text-muted">
-          {shop?.receiptFooter ?? settings.billing.receiptFooter}
+          {shop?.receiptFooter}
         </p>
-        <p className="mt-2 text-[10px] text-subtle">{settings.billing.receiptFooter}</p>
+        <p className="mt-2 text-[10px] text-subtle">{designFor(settings, shop).terms}</p>
       </footer>
     </article>
   );

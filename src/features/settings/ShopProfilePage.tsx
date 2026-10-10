@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/useToast';
 import { useAuthStore } from '@/store/authStore';
 import * as shopService from '@/services/shopService';
 import { readImageAsDataUrl } from '@/services/settingsService';
-import { changePassword } from '@/services/authService';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -83,13 +82,6 @@ export function ShopProfilePage(): JSX.Element {
     }
   };
 
-  const attemptPasswordChange = async (): Promise<void> => {
-    try {
-      toast.success(await changePassword());
-    } catch (error) {
-      toast.fromError(error);
-    }
-  };
 
   if (!shop) {
     return (
@@ -259,31 +251,20 @@ export function ShopProfilePage(): JSX.Element {
               </div>
             </div>
 
-            <div className="rounded-xl border border-line p-4">
-              <div className="flex items-start gap-3">
-                <span
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-warn-soft text-warn"
-                  aria-hidden
-                >
-                  <KeyRound className="h-[18px] w-[18px]" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-medium text-ink">Change password</p>
-                  <p className="mt-0.5 text-xs text-muted">
-                    We email you a secure link to choose a new password.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3"
-                onClick={() => void attemptPasswordChange()}
+            <div className="flex items-start gap-3 rounded-xl border border-line p-4">
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-canvas text-muted"
+                aria-hidden
               >
-                Change password
-              </Button>
+                <KeyRound className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium text-ink">Password</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Your login is managed by the owner. To change the password, ask the owner — they can
+                  set a new one for you in a minute.
+                </p>
+              </div>
             </div>
           </div>
         </Card>

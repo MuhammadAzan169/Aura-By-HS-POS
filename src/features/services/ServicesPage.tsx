@@ -1,3 +1,6 @@
+import { CategoryManager } from './CategoryManager';
+import { useDeleteAction } from '@/hooks/useDeleteAction';
+import * as deleteService from '@/services/deleteService';
 import { ImportModal } from '@/components/shared/ImportModal';
 import * as importService from '@/services/importService';
 import { FileUp } from 'lucide-react';
@@ -35,6 +38,8 @@ export function ServicesPage(): JSX.Element {
   const [params, setParams] = useSearchParams();
 
   const [importOpen, setImportOpen] = useState(false);
+  const [catsOpen, setCatsOpen] = useState(false);
+  const del = useDeleteAction();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
@@ -204,6 +209,9 @@ export function ServicesPage(): JSX.Element {
         actions={
           isAdmin ? (
             <>
+            <Button variant="outline" onClick={() => setCatsOpen(true)}>
+              Categories
+            </Button>
             <Button variant="outline" leftIcon={<FileUp />} onClick={() => setImportOpen(true)}>
               Import
             </Button>
@@ -220,6 +228,8 @@ export function ServicesPage(): JSX.Element {
           ) : undefined
         }
       />
+
+      <CategoryManager open={catsOpen} onClose={() => setCatsOpen(false)} />
 
       <ImportModal
         open={importOpen}
@@ -306,6 +316,20 @@ export function ServicesPage(): JSX.Element {
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => void onToggle(service)}>
                     {service.active ? 'Disable' : 'Enable'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      void del({
+                        title: `Delete ${service.name}?`,
+                        description: 'Only services that were never booked or billed can be deleted.',
+                        run: () => deleteService.deleteService(service.id),
+                        done: `${service.name} deleted.`,
+                      })
+                    }
+                  >
+                    Delete
                   </Button>
                 </div>
               )

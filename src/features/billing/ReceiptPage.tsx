@@ -1,7 +1,6 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Download, Plus, Printer, RotateCcw } from 'lucide-react';
 import { formatDateTime } from '@/utils/date';
-import { printDocument } from '@/utils/export';
 import { useDb } from '@/hooks/useDb';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
@@ -46,6 +45,14 @@ export function ReceiptPage(): JSX.Element {
     );
   }
 
+  const pdfInput = () => ({
+    sale,
+    shop: db.shops.find((s) => s.id === sale.shopId),
+    staff: db.staff.find((s) => s.id === sale.staffId),
+    customer: db.customers.find((c) => c.id === sale.customerId),
+    settings: db.settings,
+  });
+
   const onRefund = async (): Promise<void> => {
     const result = await confirm({
       title: `Refund ${sale.receiptNo}?`,
@@ -80,7 +87,13 @@ export function ReceiptPage(): JSX.Element {
         }
         actions={
           <>
-            <Button variant="outline" leftIcon={<Printer />} onClick={printDocument}>
+            <Button
+              variant="outline"
+              leftIcon={<Printer />}
+              onClick={() =>
+                void import('@/utils/receiptPdf').then(({ printReceiptPdf }) => printReceiptPdf(pdfInput()))
+              }
+            >
               Print
             </Button>
             <Button
@@ -88,14 +101,7 @@ export function ReceiptPage(): JSX.Element {
               leftIcon={<Download />}
               onClick={() =>
                 // Loaded on demand so the PDF library never slows the till's first paint.
-                void import('@/utils/receiptPdf').then(({ downloadReceiptPdf }) =>
-                  downloadReceiptPdf({
-                    sale,
-                    shop: db.shops.find((s) => s.id === sale.shopId),
-                    staff: db.staff.find((s) => s.id === sale.staffId),
-                    settings: db.settings,
-                  }),
-                )
+                void import('@/utils/receiptPdf').then(({ downloadReceiptPdf }) => downloadReceiptPdf(pdfInput()))
               }
             >
               Download PDF
@@ -133,8 +139,8 @@ export function ReceiptPage(): JSX.Element {
       </div>
 
       <p className="no-print mt-4 text-center text-xs text-subtle">
-        "Download PDF" saves the bill as a file you can send on WhatsApp or email. "Print" sends
-        it to the receipt printer.
+        "Download PDF" saves the bill as a file; "Print" opens the same bill ready for the printer. The
+        layout (A4, A5 or 80 mm receipt roll) is set in Settings → Bill design.
       </p>
     </>
   );
