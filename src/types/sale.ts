@@ -71,6 +71,8 @@ export interface Sale extends BaseRecord, ShopScoped {
   tipStaffId?: string | null;
   /** Left to pay when the customer settles later ("udhaar"). */
   balanceDue?: number;
+  /** The bridal booking this bill closed; its payments were counted when taken. */
+  bridalBookingId?: string | null;
   /** Loyalty points this bill earned. */
   pointsEarned?: number;
 }

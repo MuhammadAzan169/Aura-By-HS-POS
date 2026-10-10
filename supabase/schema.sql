@@ -150,7 +150,7 @@ begin
   foreach t in array array['staff','customers','customer_memberships','products',
                            'inventory_movements','appointments','sales','expenses','notifications',
                            'customer_credits','register_sessions','attendance','feedback',
-                           'payroll_runs','activity_log']
+                           'payroll_runs','activity_log','bridal_bookings']
   loop
     execute format($f$
       create table if not exists public.%1$I (
@@ -192,6 +192,33 @@ drop policy if exists vouchers_redeem on public.vouchers;
 create policy vouchers_redeem on public.vouchers for update
   using (public.is_member()) with check (public.is_member());
 
+-- Enquiries: the website's "Book appointment" form writes here directly with
+-- the public key — insert only, as a new website enquiry, and nothing can be
+-- read back. Branches see their own and the ones nobody has taken yet.
+create table if not exists public.enquiries (
+  id text primary key,
+  data jsonb not null,
+  shop_id text generated always as (data->>'shopId') stored,
+  updated_at timestamptz not null default now()
+);
+alter table public.enquiries enable row level security;
+drop policy if exists enquiries_admin on public.enquiries;
+create policy enquiries_admin on public.enquiries for all
+  using (public.is_admin()) with check (public.is_admin());
+drop policy if exists enquiries_shop on public.enquiries;
+create policy enquiries_shop on public.enquiries for all
+  using (public.my_shop_id() is not null and (shop_id is null or shop_id = public.my_shop_id()))
+  with check (public.my_shop_id() is not null and (shop_id is null or shop_id = public.my_shop_id()));
+drop policy if exists enquiries_public on public.enquiries;
+create policy enquiries_public on public.enquiries for insert to anon
+  with check (
+    data->>'status' = 'new' and data->>'source' = 'website' and shop_id is null
+    and length(coalesce(data->>'name', '')) between 1 and 120
+    and length(coalesce(data->>'phone', '')) between 7 and 30
+    and length(coalesce(data->>'message', '')) <= 2000
+  );
+grant insert on public.enquiries to anon;
+
 -- ---------------------------------------------------------------------------
 -- updated_at bookkeeping
 -- ---------------------------------------------------------------------------
@@ -204,7 +231,8 @@ begin
   foreach t in array array['profiles','shops','service_categories','services','packages',
     'memberships','app_settings','staff','customers','customer_memberships','products',
     'inventory_movements','appointments','sales','expenses','notifications','coupons','vouchers',
-    'customer_credits','register_sessions','attendance','feedback','payroll_runs','activity_log']
+    'customer_credits','register_sessions','attendance','feedback','payroll_runs','activity_log',
+    'bridal_bookings','enquiries']
   loop
     execute format('drop trigger if exists touch on public.%I', t);
     execute format('create trigger touch before update on public.%I
@@ -252,7 +280,8 @@ begin
   foreach t in array array['profiles','shops','service_categories','services','packages',
     'memberships','app_settings','staff','customers','customer_memberships','products',
     'inventory_movements','appointments','sales','expenses','notifications','coupons','vouchers',
-    'customer_credits','register_sessions','attendance','feedback','payroll_runs']
+    'customer_credits','register_sessions','attendance','feedback','payroll_runs',
+    'bridal_bookings','enquiries']
   loop
     begin
       execute format('alter publication supabase_realtime add table public.%I', t);

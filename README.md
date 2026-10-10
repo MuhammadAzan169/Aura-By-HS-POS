@@ -70,6 +70,14 @@ absences, payslip PDF, booked to expenses) · Customer feedback and ratings · B
 anniversary reminders · WhatsApp bills, reminders and greetings · Automatic activity log of
 every change.
 
+### Bridal & leads
+Bridal bookings (package, every event — trial, mehndi, nikah, barat, walima — with date, ready-by
+time, artist, salon or on-location venue and look notes; extras, travel charge, discount; advance
+to hold the dates, instalments, refunds; quotation / confirmation PDF; WhatsApp confirmation;
+each event blocks the artist's diary; complete & bill) · Enquiries inbox (website form posts
+straight in — see [docs/WEBSITE.md](docs/WEBSITE.md); follow-ups, notes, convert to customer,
+appointment or bridal booking) · The Aura menu from the website as a one-click starter catalogue.
+
 ### Owner controls
 Users & logins (create a login per person, set and reset passwords — branches cannot change their
 own) · Bill design with live PDF preview (A4, A5, 80 mm roll; colour, title, NTN, terms,

@@ -192,6 +192,7 @@ export function RegisterPage(): JSX.Element {
                   <Row label="Cash from bills" value={summary.cashSales} />
                   <Row label="Gift vouchers sold (cash)" value={summary.voucherSalesCash} />
                   <Row label="Advances taken (cash)" value={summary.advancesCash} />
+                  <Row label="Bridal payments (cash)" value={summary.bridalCash} />
                   <Row label="Refunded in cash" value={-summary.refundCash} />
                   <Row label="Advances returned" value={-summary.advanceRefundsCash} />
                   <Row label="Cash put in" value={summary.cashIn} />

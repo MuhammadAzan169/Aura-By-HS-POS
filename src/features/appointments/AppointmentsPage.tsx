@@ -52,6 +52,8 @@ export function AppointmentsPage(): JSX.Element {
 
   // ?id= opens a booking directly (used by notifications and the dashboards).
   // ?new=1 opens the booking form.
+  const [prefillCustomer, setPrefillCustomer] = useState<string | null>(null);
+
   useEffect(() => {
     const id = params.get('id');
     if (id) {
@@ -61,8 +63,10 @@ export function AppointmentsPage(): JSX.Element {
     }
     if (params.get('new') === '1') {
       setEditing(null);
+      setPrefillCustomer(params.get('customer'));
       setFormOpen(true);
       params.delete('new');
+      params.delete('customer');
       setParams(params, { replace: true });
     }
   }, [params, setParams]);
@@ -449,6 +453,7 @@ export function AppointmentsPage(): JSX.Element {
           }}
           shopId={editing?.shopId ?? shopId}
           appointment={editing}
+          initialCustomerId={editing ? undefined : prefillCustomer}
           initialDate={view === 'list' ? undefined : anchor}
           onSaved={(saved) => setSelectedId(saved.id)}
         />

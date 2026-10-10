@@ -59,6 +59,9 @@ const TeamPage = lazy(() => import('@/features/team/TeamPage'));
 const ActivityPage = lazy(() => import('@/features/activity/ActivityPage'));
 const FeedbackPage = lazy(() => import('@/features/activity/FeedbackPage'));
 const UsersPage = lazy(() => import('@/features/users/UsersPage'));
+const BridalPage = lazy(() => import('@/features/bridal/BridalPage'));
+const BridalDetailPage = lazy(() => import('@/features/bridal/BridalDetailPage'));
+const EnquiriesPage = lazy(() => import('@/features/enquiries/EnquiriesPage'));
 
 export const router = createBrowserRouter([
   {
@@ -107,6 +110,9 @@ export const router = createBrowserRouter([
               { path: 'reports', element: <ReportsPage /> },
 
               { path: 'register', element: <RegisterPage /> },
+              { path: 'bridal', element: <BridalPage /> },
+              { path: 'bridal/:bookingId', element: <BridalDetailPage /> },
+              { path: 'enquiries', element: <EnquiriesPage /> },
               { path: 'rewards', element: <RewardsPage /> },
               { path: 'team', element: <TeamPage /> },
               { path: 'activity', element: <ActivityPage /> },
@@ -143,6 +149,9 @@ export const router = createBrowserRouter([
               { path: 'inventory', element: <InventoryPage /> },
 
               { path: 'register', element: <RegisterPage /> },
+              { path: 'bridal', element: <BridalPage /> },
+              { path: 'bridal/:bookingId', element: <BridalDetailPage /> },
+              { path: 'enquiries', element: <EnquiriesPage /> },
               { path: 'rewards', element: <RewardsPage /> },
               { path: 'team', element: <TeamPage /> },
               { path: 'activity', element: <ActivityPage /> },

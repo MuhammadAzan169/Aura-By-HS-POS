@@ -45,7 +45,7 @@ export function getByReceiptNo(receiptNo: string): Sale | undefined {
 }
 
 /** Next sequential receipt number for a shop in the current year. */
-function nextReceiptNo(shopId: string): string {
+export function nextReceiptNo(shopId: string): string {
   const db = read();
   const shop = requireRow(db.shops.find((s) => s.id === shopId), 'That branch');
   const year = getYear(new Date());

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Cake, Heart, LockKeyhole, MessageCircle, Wallet } from 'lucide-react';
+import { Cake, Crown, Heart, Inbox, LockKeyhole, MessageCircle, Wallet } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { formatCurrency } from '@/utils/money';
 import { openWhatsApp } from '@/utils/whatsapp';
@@ -43,7 +43,13 @@ export function FrontDeskAlerts({ shopId }: { shopId: string | null }): JSX.Elem
   }, [db.customers, db.sales, shopId]);
 
   const tillOpen = shopId ? openSession(shopId, db) !== null : true;
-  if (!celebrations.length && !dueCount && tillOpen) return null;
+  const newEnquiries = db.enquiries.filter((e) => e.status === 'new' && (shopId === null || e.shopId === shopId || e.shopId === null)).length;
+  const week = Array.from({ length: 7 }, (_, i) => format(addDays(new Date(), i), 'yyyy-MM-dd'));
+  const bridalSoon = db.bridalBookings
+    .filter((b) => (shopId === null || b.shopId === shopId) && (b.status === 'confirmed' || b.status === 'tentative'))
+    .flatMap((b) => b.events.filter((e) => e.status === 'scheduled' && week.includes(e.date)).map((e) => ({ b, e })))
+    .sort((x, y) => `${x.e.date}${x.e.readyBy}`.localeCompare(`${y.e.date}${y.e.readyBy}`));
+  if (!celebrations.length && !dueCount && tillOpen && !newEnquiries && !bridalSoon.length) return null;
 
   const greet = (c: (typeof celebrations)[number]): void =>
     openWhatsApp(
@@ -62,6 +68,27 @@ export function FrontDeskAlerts({ shopId }: { shopId: string | null }): JSX.Elem
             <LockKeyhole className="h-4 w-4 text-warn" aria-hidden />
             The till has not been opened today — open it with the morning float.
           </Link>
+        )}
+        {newEnquiries > 0 && (
+          <Link to={`${base}/enquiries`} className="flex items-center gap-2 rounded-xl bg-brand-soft px-3.5 py-2.5 text-[13px] text-ink">
+            <Inbox className="h-4 w-4 text-brand" aria-hidden />
+            {newEnquiries} new {newEnquiries === 1 ? 'enquiry' : 'enquiries'} waiting for a call back.
+          </Link>
+        )}
+        {bridalSoon.length > 0 && (
+          <ul className="divide-y divide-line rounded-xl border border-accent/40">
+            {bridalSoon.slice(0, 6).map(({ b, e }) => (
+              <li key={e.id}>
+                <Link to={`${base}/bridal/${b.id}`} className="flex items-center gap-3 px-3.5 py-2 text-[13px] hover:bg-canvas">
+                  <Crown className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate text-ink">
+                    <strong>{e.type}</strong> — {b.brideName} · {e.date === week[0] ? 'today' : e.date === week[1] ? 'tomorrow' : e.date} · ready by {e.readyBy}
+                  </span>
+                  {!e.artistId && <span className="text-xs text-danger">no artist</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
         {dueCount > 0 && (
           <Link to={`${base}/billing/bills?status=unpaid`} className="flex items-center gap-2 rounded-xl bg-danger-soft px-3.5 py-2.5 text-[13px] text-ink">

@@ -39,4 +39,6 @@ export interface Appointment extends BaseRecord, ShopScoped {
   /** Set once a bill has been raised against this appointment. */
   saleId: string | null;
   source: 'walk-in' | 'phone' | 'online' | 'front-desk';
+  /** Set when this diary entry is one event of a bridal booking. */
+  bridalBookingId?: string | null;
 }

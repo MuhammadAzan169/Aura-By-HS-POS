@@ -1,6 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/mock/seed';
-import type { Settings } from '@/types';
+import type { Enquiry, Settings } from '@/types';
 import { liveDefaultSettings as defaultSettings } from '@/services/defaults';
 import { SCHEMA_VERSION } from '@/mock/seed';
 import { applyRemote, getDb, replaceDb, setMutationListener } from '@/store/dataStore';
@@ -44,6 +44,8 @@ export const TABLES: Record<RowTable, string> = {
   feedback: 'feedback',
   payrollRuns: 'payroll_runs',
   activity: 'activity_log',
+  bridalBookings: 'bridal_bookings',
+  enquiries: 'enquiries',
 };
 
 const SETTINGS_TABLE = 'app_settings';
@@ -103,10 +105,40 @@ export async function loadAll(): Promise<Database> {
   keys.forEach((k, i) => {
     (db as unknown as Record<string, unknown[]>)[k] = rows[i] ?? [];
   });
+  db.enquiries = db.enquiries.map(normaliseEnquiry);
   const stored = settingsRows[0] as Partial<Settings> | undefined;
   // Merge over the defaults so a setting added in a later version is never missing.
   if (stored) db.settings = { ...defaultSettings, ...stored } as Settings;
   return db;
+}
+
+/**
+ * Enquiries can be written by the public website, so a row may be missing
+ * fields or carry the wrong types. Fill and coerce them so the screen never
+ * breaks on someone else's form.
+ */
+function normaliseEnquiry(raw: unknown): Enquiry {
+  const r = (raw ?? {}) as Partial<Enquiry> & Record<string, unknown>;
+  const str = (v: unknown, max = 500): string => (typeof v === 'string' ? v.slice(0, max) : '');
+  const at = typeof r.createdAt === 'string' ? r.createdAt : new Date().toISOString();
+  return {
+    id: str(r.id, 80),
+    createdAt: at,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : at,
+    shopId: typeof r.shopId === 'string' ? r.shopId : null,
+    name: str(r.name, 120) || 'Unknown',
+    phone: str(r.phone, 30),
+    email: str(r.email, 120),
+    interest: str(r.interest, 200),
+    preferredDate: typeof r.preferredDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.preferredDate) ? r.preferredDate : null,
+    message: str(r.message, 2000),
+    source: (['website', 'instagram', 'facebook', 'whatsapp', 'phone', 'walk-in', 'referral'] as const).includes(r.source as never) ? (r.source as Enquiry['source']) : 'website',
+    status: (['new', 'contacted', 'booked', 'lost'] as const).includes(r.status as never) ? (r.status as Enquiry['status']) : 'new',
+    notes: str(r.notes, 5000),
+    followUpOn: typeof r.followUpOn === 'string' ? r.followUpOn : null,
+    customerId: typeof r.customerId === 'string' ? r.customerId : null,
+    bookingId: typeof r.bookingId === 'string' ? r.bookingId : null,
+  };
 }
 
 function diff(prev: Database, next: Database): Op[] {
@@ -240,7 +272,8 @@ function subscribe(): void {
         return;
       }
 
-      const data = (payload.new as Row).data as { id: string };
+      const raw = (payload.new as Row).data;
+      const data = (key === 'enquiries' ? normaliseEnquiry(raw) : raw) as { id: string };
       applyRemote((db) => {
         const rows = db[key] as Array<{ id: string }>;
         const index = rows.findIndex((r) => r.id === data.id);

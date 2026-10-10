@@ -39,6 +39,7 @@ export interface RegisterSummary {
   advancesCash: number;
   advanceRefundsCash: number;
   refundCash: number;
+  bridalCash: number;
   cashIn: number;
   cashOut: number;
   expectedCash: number;
@@ -73,8 +74,22 @@ export function summarise(session: RegisterSession, db: Database = read()): Regi
       refundCash += sale.payments.filter((p) => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0);
     }
     for (const p of sale.payments) {
+      // A wedding's payments were counted when each one was taken (below);
+      // only a balance collected on its bill afterwards is new money.
+      if (sale.bridalBookingId && p.reference) continue;
       const at = p.at ?? sale.soldAt;
       if (between(at, from, to)) byMethod[p.method] += p.amount;
+    }
+  }
+
+  let bridalCash = 0;
+  for (const b of db.bridalBookings) {
+    if (b.shopId !== session.shopId) continue;
+    for (const p of b.payments) {
+      if (!between(p.at, from, to)) continue;
+      const signed = p.kind === 'refund' ? -p.amount : p.amount;
+      byMethod[p.method] += signed;
+      if (p.method === 'cash') bridalCash += signed;
     }
   }
 
@@ -98,10 +113,10 @@ export function summarise(session: RegisterSession, db: Database = read()): Regi
   const cashIn = session.movements.filter((m) => m.type === 'in').reduce((s, m) => s + m.amount, 0);
   const cashOut = session.movements.filter((m) => m.type === 'out').reduce((s, m) => s + m.amount, 0);
   // Cash payments are recorded at what was owed, so change is already netted out.
-  const cashSales = byMethod.cash - voucherSalesCash - advancesCash;
+  const cashSales = byMethod.cash - voucherSalesCash - advancesCash - bridalCash;
 
   const expectedCash = round2(
-    session.openingFloat + cashSales + voucherSalesCash + advancesCash - advanceRefundsCash - refundCash + cashIn - cashOut,
+    session.openingFloat + cashSales + voucherSalesCash + advancesCash + bridalCash - advanceRefundsCash - refundCash + cashIn - cashOut,
   );
 
   const r = (n: number): number => round2(n);
@@ -110,7 +125,7 @@ export function summarise(session: RegisterSession, db: Database = read()): Regi
     grossSales: r(grossSales), discounts: r(discounts), tax: r(tax), tips: r(tips), refundedValue: r(refundedValue),
     byMethod: Object.fromEntries(Object.entries(byMethod).map(([k, v]) => [k, r(v)])) as Record<PaymentMethod, number>,
     cashSales: r(cashSales), changeGiven: r(changeGiven), voucherSalesCash: r(voucherSalesCash),
-    advancesCash: r(advancesCash), advanceRefundsCash: r(advanceRefundsCash), refundCash: r(refundCash),
+    advancesCash: r(advancesCash), advanceRefundsCash: r(advanceRefundsCash), refundCash: r(refundCash), bridalCash: r(bridalCash),
     cashIn: r(cashIn), cashOut: r(cashOut), expectedCash,
   };
 }

@@ -6,6 +6,8 @@ import {
   CreditCard,
   FileBarChart,
   Gift,
+  Crown,
+  Inbox,
   KeyRound,
   History,
   LockKeyhole,
@@ -53,6 +55,8 @@ export const ADMIN_NAV: NavSection[] = [
     label: 'Operations',
     items: [
       { label: 'Appointments', to: '/admin/appointments', icon: CalendarDays },
+      { label: 'Bridal Bookings', to: '/admin/bridal', icon: Crown, match: '/admin/bridal' },
+      { label: 'Enquiries', to: '/admin/enquiries', icon: Inbox },
       { label: 'Customers', to: '/admin/customers', icon: Users, match: '/admin/customers' },
       { label: 'Staff', to: '/admin/staff', icon: UserSquare2, match: '/admin/staff' },
       { label: 'Attendance & Payroll', to: '/admin/team', icon: UserCheck },
@@ -97,6 +101,8 @@ export const SHOP_NAV: NavSection[] = [
     items: [
       { label: 'Dashboard', to: '/shop', icon: LayoutDashboard, primary: true },
       { label: 'Appointments', to: '/shop/appointments', icon: CalendarDays, primary: true },
+      { label: 'Bridal Bookings', to: '/shop/bridal', icon: Crown, match: '/shop/bridal' },
+      { label: 'Enquiries', to: '/shop/enquiries', icon: Inbox },
     ],
   },
   {

@@ -29,7 +29,12 @@ import { isCloud } from '@/services/cloud/client';
 import { mutateDb } from '@/store/dataStore';
 import { flush } from '@/services/cloud/sync';
 import { downloadJson, timestampedName } from '@/utils/export';
-import { memberships, serviceCategories, services, servicePackages } from '@/mock/catalog';
+import {
+  auraCategories as serviceCategories,
+  auraMemberships as memberships,
+  auraPackages as servicePackages,
+  auraServices as services,
+} from '@/services/auraMenu';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -559,15 +564,15 @@ function CloudDataSection(): JSX.Element {
       });
       await flush();
     },
-    { successMessage: 'Starter menu added. Edit prices and names under Services.' },
+    { successMessage: 'Aura menu added. Edit prices and durations under Services and Packages.' },
   );
 
   const onStarter = async (): Promise<void> => {
     const result = await confirm({
-      title: 'Add the starter service menu?',
+      title: 'Add the Aura by HS menu?',
       description:
-        'Adds sample categories, services, packages and memberships you can then edit or switch off. Nothing existing is changed.',
-      confirmLabel: 'Add starter menu',
+        'Adds the eight disciplines and the four bridal packages from the website (Bride Essential, Signature, Royal, Aura Premium) with their prices. Edit anything afterwards. Nothing existing is changed.',
+      confirmLabel: 'Add Aura menu',
     });
     if (result.confirmed) await loadStarter.run();
   };
@@ -599,9 +604,9 @@ function CloudDataSection(): JSX.Element {
         </div>
 
         <div className="rounded-xl border border-line p-4">
-          <p className="text-[13px] font-medium text-ink">Starter service menu</p>
+          <p className="text-[13px] font-medium text-ink">Aura by HS menu</p>
           <p className="mt-0.5 text-xs text-muted">
-            A ready-made salon menu (hair, skin, nails, make-up, bridal packages, memberships) to
+            The website's menu — Bridal, Party, Salon, Hair, Skin, Nails, Mehndi, Photography and the four bridal packages — to
             save typing on day one. {db.services.length} services in the menu now.
           </p>
           <Button
@@ -612,7 +617,7 @@ function CloudDataSection(): JSX.Element {
             loading={loadStarter.pending}
             onClick={() => void onStarter()}
           >
-            Add starter menu
+            Add Aura menu
           </Button>
         </div>
       </div>

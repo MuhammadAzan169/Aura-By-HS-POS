@@ -36,6 +36,8 @@ const AUDITED: Partial<Record<keyof Database, { entity: string; label: (row: nev
   registerSessions: { entity: 'Cash register', label: (r: { closedAt: string | null }) => (r.closedAt ? 'closed' : 'open') },
   attendance: { entity: 'Attendance', label: (r: { date: string; status: string }) => `${r.date} · ${r.status}` },
   payrollRuns: { entity: 'Salary payment', label: (r: { month: string; netPay: number }) => `${r.month} · ${r.netPay}` },
+  bridalBookings: { entity: 'Bridal booking', label: (r: { bookingNo: string; brideName: string; status: string }) => `${r.bookingNo} · ${r.brideName} · ${r.status}` },
+  enquiries: { entity: 'Enquiry', label: (r: { name: string; status: string }) => `${r.name} · ${r.status}` },
   feedback: { entity: 'Feedback', label: (r: { rating: number; customerName: string }) => `${r.customerName} · ${r.rating}★` },
 };
 

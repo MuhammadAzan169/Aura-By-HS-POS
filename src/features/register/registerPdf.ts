@@ -62,6 +62,7 @@ export function downloadRegisterPdf(session: RegisterSession, summary: RegisterS
   row('Cash from bills', rs(summary.cashSales));
   if (summary.voucherSalesCash) row('Gift vouchers sold (cash)', rs(summary.voucherSalesCash));
   if (summary.advancesCash) row('Advances taken (cash)', rs(summary.advancesCash));
+  if (summary.bridalCash) row('Bridal payments (cash)', rs(summary.bridalCash));
   if (summary.refundCash) row('Refunded in cash', `-${rs(summary.refundCash)}`);
   if (summary.advanceRefundsCash) row('Advances returned', `-${rs(summary.advanceRefundsCash)}`);
   row('Cash put in', rs(summary.cashIn));

@@ -211,7 +211,7 @@ export function AppointmentDrawer({
             </Button>
           )}
 
-          {appointment.status === 'completed' && !appointment.saleId && (
+          {appointment.status === 'completed' && !appointment.saleId && !appointment.bridalBookingId && (
             <Button size="sm" variant="accent" leftIcon={<Receipt />} onClick={createBill}>
               Create bill
             </Button>

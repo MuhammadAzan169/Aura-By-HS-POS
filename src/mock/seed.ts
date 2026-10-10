@@ -24,6 +24,8 @@ import type {
   Feedback,
   PayrollRun,
   ActivityEntry,
+  BridalBooking,
+  Enquiry,
 } from '@/types';
 import { memberships, servicePackages, serviceCategories, services } from './catalog';
 import { credentials, shops, users } from './shops';
@@ -63,12 +65,14 @@ export interface Database {
   feedback: Feedback[];
   payrollRuns: PayrollRun[];
   activity: ActivityEntry[];
+  bridalBookings: BridalBooking[];
+  enquiries: Enquiry[];
   settings: Settings;
   /** Bumped whenever the seed shape changes, so stale saves are discarded. */
   schemaVersion: number;
 }
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /**
  * Builds the full demo dataset. Everything is derived from `today` so the demo
@@ -125,6 +129,8 @@ export function createSeedDatabase(today: Date = new Date()): Database {
     feedback: [],
     payrollRuns: [],
     activity: [],
+    bridalBookings: [],
+    enquiries: [],
     settings: { ...defaultSettings },
     schemaVersion: SCHEMA_VERSION,
   };
