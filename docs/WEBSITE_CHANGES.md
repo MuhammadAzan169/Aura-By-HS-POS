@@ -237,3 +237,75 @@ The same wording is in the app under Profile → Privacy policy / Terms of servi
 - [ ] "Get the app" badges read from `/v1/public/app-links`
 - [ ] Privacy, terms, account-deletion and contact pages published and linked in the footer
 - [ ] WhatsApp and phone numbers match POS → Settings
+- [ ] The four things in section 9 sent back for checking
+
+---
+
+## 9. Send this back so the work can be checked
+
+When the changes are done, send these four things to whoever is checking the work (the developer who
+built the POS and the app). With them, every point above can be verified properly instead of assumed.
+
+**1. The website address** — the live site, or a preview/staging link if it is not published yet:
+
+```
+Website:  https://aurabyhs.pk            (or https://preview-xyz.vercel.app)
+API used: https://aura-api.onrender.com
+```
+
+If the site is not online anywhere yet, send the repository instead (add the checker as a collaborator
+on GitHub/GitLab) or zip the changed files. Three files usually cover it: the helper, the booking page
+and the contact page.
+
+**2. A test booking and a test enquiry, made on the website.** Use an obvious fake name so the salon can
+tell it apart, and write down what you used:
+
+```
+Test booking   — name "Test Website", phone 03001112233, branch …, service …, date & time …
+Test enquiry   — name "Test Enquiry", phone 03001112233, interest "Bride Royal"
+Test payment   — (if the advance step is on) amount shown … , approved on the TEST MODE page: yes/no
+```
+
+The checker opens the POS and confirms the booking is in **Appointments** (source *Online*, status
+*Pending*), the enquiry is in **Enquiries**, and the payment is in **Online payments**. Delete the test
+rows afterwards from the POS.
+
+**3. Four screenshots** (phone width is fine):
+
+* the services section, showing prices that came from the POS;
+* the booking form with the times list open;
+* the thank-you page after booking;
+* the footer with the "Get the app" area and the privacy / terms links.
+
+**4. Answers to these five questions** — they are the things that cannot be seen from outside:
+
+1. Is there any price, service name or branch address still typed into the website by hand? (There
+   should be none — all of it comes from `/v1/catalog`.)
+2. Does the booking form send `startAt` exactly as `/v1/availability` returned it, without reformatting
+   the date?
+3. What does the page show when the API is slow or asleep (the first request can take 30–60 seconds),
+   and what does it show when a booking is refused — the server's own message, or a generic one?
+   (It must show the server's message: it says things like "That time is no longer free.")
+4. Is the Supabase anon key, service key or any password anywhere in the website's code? (There must be
+   none — the website only ever calls the API.)
+5. Which addresses are in `CORS_ORIGINS` on Render?
+
+### What "perfectly done" means
+
+The checker will confirm all of this; it is the same list the website developer can run through first:
+
+| Check | How it is confirmed |
+| --- | --- |
+| Live menu | Change a service price in the POS → reload the website → the new price shows |
+| Booking really lands | The test booking appears in POS → Appointments within a second, with the right branch, artist, service and time |
+| Times are real | A slot that the POS has already booked is not offered on the website |
+| Double booking | Two people taking the last slot: the second sees a clear message, not a silent failure |
+| Payment (test mode) | The test payment appears in POS → Online payments and the booking turns *Confirmed* |
+| Enquiries | The test enquiry appears in POS → Enquiries |
+| App links | Empty in the POS → the badges are hidden; filled in → they appear without touching the website again |
+| Phone layout | The booking form is usable on a phone, with no sideways scrolling |
+| Nothing secret | No keys or passwords in the website's source |
+| Nothing broken | The browser console shows no red errors on the home, services, booking and contact pages |
+
+Anything that fails gets sent back with the exact message or screenshot, and this guide is the reference
+for fixing it.
