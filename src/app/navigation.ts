@@ -8,6 +8,8 @@ import {
   Gift,
   Crown,
   Inbox,
+  MessagesSquare,
+  Smartphone,
   KeyRound,
   History,
   LockKeyhole,
@@ -35,6 +37,8 @@ export interface NavItem {
   match?: string;
   /** Shown on the mobile bottom bar (shop portal). */
   primary?: boolean;
+  /** Shows a count from the sidebar's attention badges. */
+  badge?: 'messages' | 'payments';
 }
 
 export interface NavSection {
@@ -57,6 +61,7 @@ export const ADMIN_NAV: NavSection[] = [
       { label: 'Appointments', to: '/admin/appointments', icon: CalendarDays },
       { label: 'Bridal Bookings', to: '/admin/bridal', icon: Crown, match: '/admin/bridal' },
       { label: 'Enquiries', to: '/admin/enquiries', icon: Inbox },
+      { label: 'Messages', to: '/admin/messages', icon: MessagesSquare, badge: 'messages' },
       { label: 'Customers', to: '/admin/customers', icon: Users, match: '/admin/customers' },
       { label: 'Staff', to: '/admin/staff', icon: UserSquare2, match: '/admin/staff' },
       { label: 'Attendance & Payroll', to: '/admin/team', icon: UserCheck },
@@ -77,6 +82,7 @@ export const ADMIN_NAV: NavSection[] = [
     label: 'Money',
     items: [
       { label: 'Sales & Billing', to: '/admin/billing', icon: CreditCard, match: '/admin/billing' },
+      { label: 'Online Payments', to: '/admin/online-payments', icon: Smartphone, badge: 'payments' },
       { label: 'Day Close', to: '/admin/register', icon: LockKeyhole },
       { label: 'Vouchers & Coupons', to: '/admin/rewards', icon: TicketPercent },
       { label: 'Expenses', to: '/admin/expenses', icon: Wallet },
@@ -103,6 +109,7 @@ export const SHOP_NAV: NavSection[] = [
       { label: 'Appointments', to: '/shop/appointments', icon: CalendarDays, primary: true },
       { label: 'Bridal Bookings', to: '/shop/bridal', icon: Crown, match: '/shop/bridal' },
       { label: 'Enquiries', to: '/shop/enquiries', icon: Inbox },
+      { label: 'Messages', to: '/shop/messages', icon: MessagesSquare, badge: 'messages' },
     ],
   },
   {
@@ -110,6 +117,7 @@ export const SHOP_NAV: NavSection[] = [
     items: [
       { label: 'Sales & Billing', to: '/shop/billing', icon: CreditCard, match: '/shop/billing', primary: true },
       { label: 'Customers', to: '/shop/customers', icon: Users, match: '/shop/customers', primary: true },
+      { label: 'Online Payments', to: '/shop/online-payments', icon: Smartphone, badge: 'payments' },
       { label: 'Day Close', to: '/shop/register', icon: LockKeyhole },
       { label: 'Gift Vouchers', to: '/shop/rewards', icon: Gift },
     ],

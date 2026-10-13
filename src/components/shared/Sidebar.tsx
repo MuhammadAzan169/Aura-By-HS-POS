@@ -4,6 +4,19 @@ import { cn } from '@/utils/cn';
 import type { NavSection } from '@/app/navigation';
 import { useUiStore } from '@/store/uiStore';
 import { Logo } from './Logo';
+import { useDb } from '@/hooks/useDb';
+import { useShopScope } from '@/hooks/useShopScope';
+
+/** Counts that need someone's attention: unread chats, receipts to check. */
+function useBadges(): Record<string, number> {
+  const db = useDb();
+  const { shopId } = useShopScope();
+  const mine = <T extends { shopId: string | null }>(rows: T[]): T[] => (shopId === null ? rows : rows.filter((r) => r.shopId === shopId));
+  return {
+    messages: mine(db.messages).filter((m) => m.from === 'customer' && !m.readByStaff).length,
+    payments: mine(db.onlinePayments).filter((p) => p.status === 'verifying').length,
+  };
+}
 
 export interface SidebarProps {
   sections: NavSection[];
@@ -25,6 +38,7 @@ function NavList({
   onNavigate?: () => void;
 }): JSX.Element {
   const { pathname } = useLocation();
+  const badges = useBadges();
 
   return (
     <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Main">
@@ -59,6 +73,11 @@ function NavList({
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
                     {!collapsed && <span className="truncate">{item.label}</span>}
+                    {item.badge && (badges[item.badge] ?? 0) > 0 && (
+                      <span className={cn('ml-auto rounded-full bg-danger px-1.5 text-[11px] font-semibold leading-5 text-white', collapsed && 'absolute ml-5 -mt-5')}>
+                        {badges[item.badge]}
+                      </span>
+                    )}
                     {collapsed && <span className="sr-only">{item.label}</span>}
                   </NavLink>
                 </li>

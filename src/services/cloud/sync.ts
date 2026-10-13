@@ -46,6 +46,9 @@ export const TABLES: Record<RowTable, string> = {
   activity: 'activity_log',
   bridalBookings: 'bridal_bookings',
   enquiries: 'enquiries',
+  onlinePayments: 'online_payments',
+  messages: 'messages',
+  announcements: 'announcements',
 };
 
 const SETTINGS_TABLE = 'app_settings';

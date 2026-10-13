@@ -1,3 +1,4 @@
+import type { MoneyMethod } from '@/types';
 import { useState } from 'react';
 import { MessageCircle, PiggyBank, Star, Wallet } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -36,7 +37,7 @@ export function CustomerAccountCard({ customer }: { customer: Customer }): JSX.E
 
   const [mode, setMode] = useState<'advance' | 'return' | null>(null);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'cash' | 'card' | 'bank-transfer' | 'other'>('cash');
+  const [method, setMethod] = useState<MoneyMethod>('cash');
   const [note, setNote] = useState('');
 
   const save = useAsyncAction(
@@ -175,6 +176,8 @@ export function CustomerAccountCard({ customer }: { customer: Customer }): JSX.E
                 { value: 'cash', label: 'Cash' },
                 { value: 'card', label: 'Card' },
                 { value: 'bank-transfer', label: 'Bank transfer' },
+              { value: 'jazzcash', label: 'JazzCash' },
+              { value: 'easypaisa', label: 'Easypaisa' },
                 { value: 'other', label: 'Other' },
               ]}
             />

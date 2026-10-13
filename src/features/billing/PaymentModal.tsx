@@ -4,6 +4,7 @@ import {
   CreditCard,
   Gift,
   Landmark,
+  Smartphone,
   MoreHorizontal,
   PiggyBank,
   Split,
@@ -38,6 +39,8 @@ const METHODS: { value: PaymentMethod; label: string; icon: JSX.Element }[] = [
   { value: 'cash', label: 'Cash', icon: <Banknote /> },
   { value: 'card', label: 'Card', icon: <CreditCard /> },
   { value: 'bank-transfer', label: 'Bank transfer', icon: <Landmark /> },
+  { value: 'jazzcash', label: 'JazzCash', icon: <Smartphone /> },
+  { value: 'easypaisa', label: 'Easypaisa', icon: <Smartphone /> },
   { value: 'other', label: 'Other', icon: <MoreHorizontal /> },
 ];
 
@@ -45,6 +48,8 @@ const LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',
   card: 'Card',
   'bank-transfer': 'Bank transfer',
+  jazzcash: 'JazzCash',
+  easypaisa: 'Easypaisa',
   other: 'Other',
   voucher: 'Gift voucher',
   points: 'Loyalty points',

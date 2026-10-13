@@ -1,6 +1,6 @@
 import { openWhatsApp } from '@/utils/whatsapp';
-import { MessageCircle } from 'lucide-react';
-import { useMemo } from 'react';
+import { MessageCircle, Smartphone } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Ban,
@@ -16,6 +16,7 @@ import type { Appointment, AppointmentStatus } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { appointmentEnd, formatDateTime, formatDuration, formatTime } from '@/utils/date';
 import { allowedTransitions, APPOINTMENT_STATUS_META } from '@/utils/appointmentStatus';
+import { RequestPaymentModal } from '@/features/payments/RequestPaymentModal';
 import { useDb } from '@/hooks/useDb';
 import { useAuthStore } from '@/store/authStore';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -56,6 +57,7 @@ export function AppointmentDrawer({
   const confirm = useConfirm();
   const navigate = useNavigate();
   const cart = useCartStore();
+  const [linkOpen, setLinkOpen] = useState(false);
 
   const details = useMemo(() => {
     if (!appointment) return null;
@@ -210,6 +212,20 @@ export function AppointmentDrawer({
               Remind on WhatsApp
             </Button>
           )}
+
+          {!appointment.bridalBookingId && !['cancelled', 'no-show'].includes(appointment.status) && (!details.sale || (details.sale.balanceDue ?? 0) > 0) && (
+            <Button size="sm" variant="outline" leftIcon={<Smartphone />} onClick={() => setLinkOpen(true)}>
+              Online payment link
+            </Button>
+          )}
+          <RequestPaymentModal
+            open={linkOpen}
+            onClose={() => setLinkOpen(false)}
+            purpose="appointment"
+            refId={appointment.id}
+            phone={details.customer?.phone ?? ''}
+            name={details.customer?.name ?? 'Customer'}
+          />
 
           {appointment.status === 'completed' && !appointment.saleId && !appointment.bridalBookingId && (
             <Button size="sm" variant="accent" leftIcon={<Receipt />} onClick={createBill}>

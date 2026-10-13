@@ -171,6 +171,8 @@ export function RegisterPage(): JSX.Element {
                       ['cash', 'Cash'],
                       ['card', 'Card'],
                       ['bank-transfer', 'Bank transfer'],
+                      ['jazzcash', 'JazzCash'],
+                      ['easypaisa', 'Easypaisa'],
                       ['other', 'Other'],
                       ['voucher', 'Gift vouchers redeemed'],
                       ['points', 'Loyalty points redeemed'],

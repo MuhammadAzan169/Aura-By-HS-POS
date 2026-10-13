@@ -1,3 +1,4 @@
+import type { MoneyMethod } from './sale';
 import type { BaseRecord, ShopScoped } from './common';
 
 export type BridalEventType =
@@ -40,7 +41,7 @@ export interface BridalPayment {
   id: string;
   at: string;
   amount: number;
-  method: 'cash' | 'card' | 'bank-transfer' | 'other';
+  method: MoneyMethod;
   kind: 'advance' | 'instalment' | 'final' | 'refund';
   note: string;
   byUserName: string;

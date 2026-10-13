@@ -52,7 +52,7 @@ export function downloadRegisterPdf(session: RegisterSession, summary: RegisterS
 
   heading('Money received');
   const labels: Record<string, string> = {
-    cash: 'Cash', card: 'Card', 'bank-transfer': 'Bank transfer', other: 'Other',
+    cash: 'Cash', card: 'Card', 'bank-transfer': 'Bank transfer', jazzcash: 'JazzCash', easypaisa: 'Easypaisa', other: 'Other',
     voucher: 'Gift vouchers redeemed', points: 'Loyalty points redeemed', wallet: 'Advances used',
   };
   for (const [k, v] of Object.entries(summary.byMethod)) if (v) row(labels[k] ?? k, rs(v));

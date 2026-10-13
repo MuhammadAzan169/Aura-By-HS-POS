@@ -300,6 +300,8 @@ export function BillsPage(): JSX.Element {
               { value: 'cash', label: 'Cash' },
               { value: 'card', label: 'Card' },
               { value: 'bank-transfer', label: 'Bank transfer' },
+              { value: 'jazzcash', label: 'JazzCash' },
+              { value: 'easypaisa', label: 'Easypaisa' },
               { value: 'other', label: 'Other' },
             ]}
           />

@@ -1,9 +1,11 @@
+import type { MoneyMethod } from '@/types';
 import { useState } from 'react';
-import { MessageCircle, Star, Wallet } from 'lucide-react';
+import { MessageCircle, Star, Wallet, Smartphone } from 'lucide-react';
 import type { Sale } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/date';
 import { openWhatsApp } from '@/utils/whatsapp';
+import { RequestPaymentModal } from '@/features/payments/RequestPaymentModal';
 import { useDb } from '@/hooks/useDb';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useAuthStore } from '@/store/authStore';
@@ -40,8 +42,9 @@ export function ReceiptExtras({ sale }: { sale: Sale }): JSX.Element {
   const existingFeedback = db.feedback.find((f) => f.saleId === sale.id);
 
   const [collectOpen, setCollectOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'cash' | 'card' | 'bank-transfer' | 'other'>('cash');
+  const [method, setMethod] = useState<MoneyMethod>('cash');
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(5);
@@ -94,6 +97,12 @@ export function ReceiptExtras({ sale }: { sale: Sale }): JSX.Element {
             Collect balance · {formatCurrency(sale.balanceDue ?? 0)}
           </Button>
         )}
+        {sale.status === 'completed' && (sale.balanceDue ?? 0) > 0 && (
+          <Button variant="outline" leftIcon={<Smartphone />} onClick={() => setLinkOpen(true)}>
+            Online payment link
+          </Button>
+        )}
+        <RequestPaymentModal open={linkOpen} onClose={() => setLinkOpen(false)} purpose="sale" refId={sale.id} phone={customer?.phone ?? ''} name={customer?.name ?? sale.customerName} />
         {sale.status === 'completed' && !existingFeedback && (
           <Button variant="outline" leftIcon={<Star />} onClick={() => setFeedbackOpen(true)}>
             Record feedback
@@ -134,6 +143,8 @@ export function ReceiptExtras({ sale }: { sale: Sale }): JSX.Element {
               { value: 'cash', label: 'Cash' },
               { value: 'card', label: 'Card' },
               { value: 'bank-transfer', label: 'Bank transfer' },
+              { value: 'jazzcash', label: 'JazzCash' },
+              { value: 'easypaisa', label: 'Easypaisa' },
               { value: 'other', label: 'Other' },
             ]}
           />

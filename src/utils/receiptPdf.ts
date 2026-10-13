@@ -53,6 +53,8 @@ const METHOD_LABELS: Record<string, string> = {
   cash: 'Cash',
   card: 'Card',
   'bank-transfer': 'Bank transfer',
+  jazzcash: 'JazzCash',
+  easypaisa: 'Easypaisa',
   other: 'Other',
   voucher: 'Gift voucher',
   points: 'Loyalty points',

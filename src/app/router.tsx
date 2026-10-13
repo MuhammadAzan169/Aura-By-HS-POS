@@ -62,6 +62,8 @@ const UsersPage = lazy(() => import('@/features/users/UsersPage'));
 const BridalPage = lazy(() => import('@/features/bridal/BridalPage'));
 const BridalDetailPage = lazy(() => import('@/features/bridal/BridalDetailPage'));
 const EnquiriesPage = lazy(() => import('@/features/enquiries/EnquiriesPage'));
+const MessagesPage = lazy(() => import('@/features/messages/MessagesPage'));
+const OnlinePaymentsPage = lazy(() => import('@/features/payments/OnlinePaymentsPage'));
 
 export const router = createBrowserRouter([
   {
@@ -113,6 +115,8 @@ export const router = createBrowserRouter([
               { path: 'bridal', element: <BridalPage /> },
               { path: 'bridal/:bookingId', element: <BridalDetailPage /> },
               { path: 'enquiries', element: <EnquiriesPage /> },
+              { path: 'messages', element: <MessagesPage /> },
+              { path: 'online-payments', element: <OnlinePaymentsPage /> },
               { path: 'rewards', element: <RewardsPage /> },
               { path: 'team', element: <TeamPage /> },
               { path: 'activity', element: <ActivityPage /> },
@@ -152,6 +156,8 @@ export const router = createBrowserRouter([
               { path: 'bridal', element: <BridalPage /> },
               { path: 'bridal/:bookingId', element: <BridalDetailPage /> },
               { path: 'enquiries', element: <EnquiriesPage /> },
+              { path: 'messages', element: <MessagesPage /> },
+              { path: 'online-payments', element: <OnlinePaymentsPage /> },
               { path: 'rewards', element: <RewardsPage /> },
               { path: 'team', element: <TeamPage /> },
               { path: 'activity', element: <ActivityPage /> },

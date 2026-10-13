@@ -26,6 +26,9 @@ import type {
   ActivityEntry,
   BridalBooking,
   Enquiry,
+  OnlinePayment,
+  ChatMessage,
+  Announcement,
 } from '@/types';
 import { memberships, servicePackages, serviceCategories, services } from './catalog';
 import { credentials, shops, users } from './shops';
@@ -38,6 +41,7 @@ import { buildInventoryMovements } from './inventory';
 import { buildExpenses } from './expenses';
 import { buildNotifications } from './notifications';
 import { defaultSettings } from './settings';
+import { buildOnlineDemo } from './online';
 
 /** The shape the whole app reads from. One table per entity, exactly as a database would. */
 export interface Database {
@@ -67,12 +71,15 @@ export interface Database {
   activity: ActivityEntry[];
   bridalBookings: BridalBooking[];
   enquiries: Enquiry[];
+  onlinePayments: OnlinePayment[];
+  messages: ChatMessage[];
+  announcements: Announcement[];
   settings: Settings;
   /** Bumped whenever the seed shape changes, so stale saves are discarded. */
   schemaVersion: number;
 }
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * Builds the full demo dataset. Everything is derived from `today` so the demo
@@ -123,7 +130,6 @@ export function createSeedDatabase(today: Date = new Date()): Database {
     notifications,
     vouchers: [],
     coupons: [],
-    customerCredits: [],
     registerSessions: [],
     attendance: [],
     feedback: [],
@@ -131,6 +137,7 @@ export function createSeedDatabase(today: Date = new Date()): Database {
     activity: [],
     bridalBookings: [],
     enquiries: [],
+    ...buildOnlineDemo(today, shops, customers, appointments, services),
     settings: { ...defaultSettings },
     schemaVersion: SCHEMA_VERSION,
   };

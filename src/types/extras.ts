@@ -1,3 +1,4 @@
+import type { MoneyMethod } from './sale';
 import type { BaseRecord, ShopScoped } from './common';
 
 /** A prepaid gift voucher. Sold at one branch, redeemable at any. */
@@ -10,7 +11,7 @@ export interface Voucher extends BaseRecord, ShopScoped {
   recipientPhone: string;
   purchasedBy: string;
   /** How the buyer paid, for the day's cash count. */
-  paidBy?: 'cash' | 'card' | 'bank-transfer' | 'other';
+  paidBy?: MoneyMethod;
   /** yyyy-MM-dd, or null for no expiry. */
   expiresOn: string | null;
   active: boolean;
@@ -42,7 +43,7 @@ export interface CustomerCredit extends BaseRecord, ShopScoped {
   customerId: string;
   amount: number;
   kind: 'advance' | 'used' | 'refund' | 'adjustment';
-  method: 'cash' | 'card' | 'bank-transfer' | 'other' | null;
+  method: MoneyMethod | null;
   appointmentId: string | null;
   saleId: string | null;
   note: string;

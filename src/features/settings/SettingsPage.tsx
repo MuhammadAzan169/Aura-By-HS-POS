@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Smartphone,
   AlertTriangle,
   Bell,
   Building2,
@@ -25,6 +26,7 @@ import * as settingsService from '@/services/settingsService';
 import { formatCurrency } from '@/utils/money';
 import { changePassword } from '@/services/authService';
 import { BillDesignSection } from './BillDesignSection';
+import { OnlineSection } from './OnlineSection';
 import { isCloud } from '@/services/cloud/client';
 import { mutateDb } from '@/store/dataStore';
 import { flush } from '@/services/cloud/sync';
@@ -57,7 +59,7 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   'membership-expiring': 'A membership is about to lapse',
 };
 
-type TabValue = 'business' | 'appointments' | 'billing' | 'bill-design' | 'notifications' | 'account' | 'data';
+type TabValue = 'business' | 'appointments' | 'billing' | 'bill-design' | 'online' | 'notifications' | 'account' | 'data';
 
 export function SettingsPage(): JSX.Element {
   const db = useDb();
@@ -80,6 +82,7 @@ export function SettingsPage(): JSX.Element {
             { value: 'appointments', label: 'Appointments', icon: <CalendarCog /> },
             { value: 'billing', label: 'Billing', icon: <Receipt /> },
             { value: 'bill-design', label: 'Bill design', icon: <FileText /> },
+            { value: 'online', label: 'Online & app', icon: <Smartphone /> },
             { value: 'notifications', label: 'Notifications', icon: <Bell /> },
             { value: 'account', label: 'My account', icon: <UserCircle2 /> },
             { value: 'data', label: 'Data', icon: <RotateCcw /> },
@@ -99,6 +102,9 @@ export function SettingsPage(): JSX.Element {
       </TabPanel>
       <TabPanel active={tab === 'bill-design'}>
         <BillDesignSection settings={settings} />
+      </TabPanel>
+      <TabPanel active={tab === 'online'}>
+        <OnlineSection settings={settings} />
       </TabPanel>
       <TabPanel active={tab === 'notifications'}>
         <NotificationSection settings={settings} />

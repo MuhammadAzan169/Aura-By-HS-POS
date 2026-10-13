@@ -1,3 +1,4 @@
+import type { MoneyMethod } from '@/types';
 import { useMemo, useState } from 'react';
 import { Gift, MessageCircle, Pencil, Plus, TicketPercent, Trash2 } from 'lucide-react';
 import type { Coupon, Voucher } from '@/types';
@@ -72,7 +73,7 @@ function VouchersTab(): JSX.Element {
     purchasedBy: '',
     expiresOn: '',
     notes: '',
-    paidBy: 'cash' as 'cash' | 'card' | 'bank-transfer' | 'other',
+    paidBy: 'cash' as MoneyMethod,
   });
 
   const rows = useMemo(
@@ -265,6 +266,8 @@ function VouchersTab(): JSX.Element {
               { value: 'cash', label: 'Cash' },
               { value: 'card', label: 'Card' },
               { value: 'bank-transfer', label: 'Bank transfer' },
+              { value: 'jazzcash', label: 'JazzCash' },
+              { value: 'easypaisa', label: 'Easypaisa' },
               { value: 'other', label: 'Other' },
             ]}
           />

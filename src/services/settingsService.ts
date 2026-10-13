@@ -1,6 +1,6 @@
 import type { AppointmentRules, BillDesign, BillingSettings, BusinessProfile, LoyaltySettings, NotificationType, Settings } from '@/types';
 import { configureCurrency } from '@/utils/money';
-import { commit, delay, nowISO, read } from './db';
+import { commit, delay, nowISO, read, ServiceError } from './db';
 
 export async function get(): Promise<Settings> {
   return delay(read().settings);
@@ -82,6 +82,26 @@ export async function updateLoyalty(input: LoyaltySettings): Promise<Settings> {
 export async function updateBillDesign(input: BillDesign): Promise<Settings> {
   return commit((db) => {
     db.settings = { ...db.settings, billDesign: input, updatedAt: nowISO() };
+    return db.settings;
+  });
+}
+
+export async function updateOnlinePayments(input: import('@/types').OnlinePaymentSettings): Promise<Settings> {
+  for (const k of ['advancePct', 'bridalAdvancePct'] as const) {
+    if (!(input[k] >= 0 && input[k] <= 100)) throw new ServiceError('Advance percentages must be between 0 and 100.', 'validation');
+  }
+  if (input.apiUrl && !/^https?:\/\/[^\s]+$/.test(input.apiUrl.trim())) {
+    throw new ServiceError('The API address must start with https://', 'validation');
+  }
+  return commit((db) => {
+    db.settings = { ...db.settings, onlinePayments: { ...input, apiUrl: input.apiUrl.trim().replace(/\/+$/, '') }, updatedAt: nowISO() };
+    return db.settings;
+  });
+}
+
+export async function updateCustomerApp(input: import('@/types').CustomerAppSettings): Promise<Settings> {
+  return commit((db) => {
+    db.settings = { ...db.settings, customerApp: input, updatedAt: nowISO() };
     return db.settings;
   });
 }

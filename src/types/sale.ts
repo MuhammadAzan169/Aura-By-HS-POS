@@ -16,10 +16,16 @@ export interface SaleItem {
   lineTotal: number;
 }
 
+/** Ways money is taken at the counter or online. */
+export type MoneyMethod = 'cash' | 'card' | 'bank-transfer' | 'jazzcash' | 'easypaisa' | 'other';
+
 export type PaymentMethod =
   | 'cash'
   | 'card'
   | 'bank-transfer'
+  /** Mobile wallets — paid to the shop's wallet number or through the app. */
+  | 'jazzcash'
+  | 'easypaisa'
   | 'other'
   /** Gift voucher; `reference` holds the voucher code. */
   | 'voucher'

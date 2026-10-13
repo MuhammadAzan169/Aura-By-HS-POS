@@ -13,3 +13,4 @@ export * from './notification';
 export * from './settings';
 export * from './extras';
 export * from './bridal';
+export * from './online';

@@ -410,3 +410,98 @@ end $$;
 drop trigger if exists guard_branch_password on auth.users;
 create trigger guard_branch_password before update on auth.users
   for each row execute function public.guard_branch_password();
+
+-- ===========================================================================
+-- Customer app + online payments (shared with the Flutter app and its Python
+-- API). Added in v2 — safe to run on an existing project.
+--
+-- Customers never touch these tables directly: the app talks to the Python
+-- API, which checks who they are (their Supabase login) and writes with the
+-- service key. The POS reads and writes them like every other branch table.
+-- ===========================================================================
+
+-- Online payments: a request for money (advance, full, part or balance) on an
+-- appointment, bridal booking, bill or gift voucher, and how it was paid —
+-- JazzCash, Easypaisa, card or bank transfer. Branch-owned like a sale.
+-- App customers: one row per Supabase login of a customer (id = auth user id).
+-- Head office only; branches see the customer records they already have.
+do $$
+declare t text;
+begin
+  foreach t in array array['online_payments','messages','customer_accounts']
+  loop
+    execute format($f$
+      create table if not exists public.%1$I (
+        id text primary key,
+        data jsonb not null,
+        shop_id text generated always as (data->>'shopId') stored,
+        updated_at timestamptz not null default now()
+      );
+      create index if not exists %1$s_shop_idx on public.%1$I (shop_id);
+      alter table public.%1$I enable row level security;
+      drop policy if exists %1$s_admin on public.%1$I;
+      create policy %1$s_admin on public.%1$I for all
+        using (public.is_admin()) with check (public.is_admin());
+    $f$, t);
+  end loop;
+end $$;
+
+-- A branch handles its own payments and its own chats; head-office chats
+-- (shop_id null) are the owner's.
+drop policy if exists online_payments_shop on public.online_payments;
+create policy online_payments_shop on public.online_payments for all
+  using (shop_id = public.my_shop_id()) with check (shop_id = public.my_shop_id());
+drop policy if exists messages_shop on public.messages;
+create policy messages_shop on public.messages for all
+  using (shop_id = public.my_shop_id()) with check (shop_id = public.my_shop_id());
+
+create unique index if not exists online_payments_token_key on public.online_payments ((data->>'token'));
+create index if not exists online_payments_ref_idx on public.online_payments ((data->>'refId'));
+create index if not exists messages_thread_idx on public.messages ((data->>'threadId'));
+create index if not exists customer_accounts_phone_idx on public.customer_accounts ((data->>'phone'));
+
+-- Announcements shown in the app's "Aura Updates": every member reads, owner writes.
+create table if not exists public.announcements (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.announcements enable row level security;
+drop policy if exists announcements_read on public.announcements;
+create policy announcements_read on public.announcements for select using (public.is_member());
+drop policy if exists announcements_admin on public.announcements;
+create policy announcements_admin on public.announcements for all
+  using (public.is_admin()) with check (public.is_admin());
+
+do $$
+declare t text;
+begin
+  foreach t in array array['online_payments','messages','customer_accounts','announcements']
+  loop
+    execute format('drop trigger if exists touch on public.%I', t);
+    execute format('create trigger touch before update on public.%I
+                    for each row execute function public.touch_updated_at()', t);
+    begin
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    exception when duplicate_object or undefined_object then null;
+    end;
+  end loop;
+end $$;
+
+-- Private file storage for transfer receipts and chat photos. The API uploads
+-- with the service key; signed-in POS users may view them.
+do $$
+begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
+    insert into storage.buckets (id, name, public) values ('payment-slips', 'payment-slips', false)
+      on conflict (id) do nothing;
+    insert into storage.buckets (id, name, public) values ('chat-images', 'chat-images', false)
+      on conflict (id) do nothing;
+    drop policy if exists aura_files_read on storage.objects;
+    create policy aura_files_read on storage.objects for select to authenticated
+      using (bucket_id in ('payment-slips', 'chat-images') and public.is_member());
+    drop policy if exists aura_files_write on storage.objects;
+    create policy aura_files_write on storage.objects for insert to authenticated
+      with check (bucket_id = 'chat-images' and public.is_member());
+  end if;
+end $$;

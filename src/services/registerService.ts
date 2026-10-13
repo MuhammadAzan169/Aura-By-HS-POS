@@ -50,7 +50,7 @@ export function summarise(session: RegisterSession, db: Database = read()): Regi
   const from = session.openedAt;
   const to = session.closedAt ?? nowISO();
   const byMethod: Record<PaymentMethod, number> = {
-    cash: 0, card: 0, 'bank-transfer': 0, other: 0, voucher: 0, points: 0, wallet: 0,
+    cash: 0, card: 0, 'bank-transfer': 0, jazzcash: 0, easypaisa: 0, other: 0, voucher: 0, points: 0, wallet: 0,
   };
   let refundCash = 0;
   let bills = 0, refunds = 0, grossSales = 0, discounts = 0, tax = 0, tips = 0, refundedValue = 0, changeGiven = 0;

@@ -1,4 +1,5 @@
 import type { NotificationType } from './notification';
+import type { CustomerAppSettings, OnlinePaymentSettings } from './online';
 
 export interface BusinessProfile {
   name: string;
@@ -70,6 +71,10 @@ export interface BillDesign {
 }
 
 export interface Settings {
+  /** Online payments through the customer app, website and payment links. */
+  onlinePayments?: OnlinePaymentSettings;
+  /** Store links and contact shown in the app, on the website and in messages to customers. */
+  customerApp?: CustomerAppSettings;
   billDesign?: BillDesign;
   loyalty?: LoyaltySettings;
   business: BusinessProfile;

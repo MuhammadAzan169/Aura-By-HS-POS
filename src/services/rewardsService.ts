@@ -1,3 +1,4 @@
+import type { MoneyMethod } from '@/types';
 import type { Database } from '@/mock/seed';
 import type { Coupon, CustomerCredit, LoyaltySettings, Sale, User, Voucher } from '@/types';
 import { uid } from '@/utils/id';
@@ -102,7 +103,7 @@ export interface VoucherInput {
   expiresOn: string | null;
   notes: string;
   /** How the buyer paid; recorded for the day's cash count. */
-  paidBy: 'cash' | 'card' | 'bank-transfer' | 'other';
+  paidBy: MoneyMethod;
 }
 
 /**
@@ -156,7 +157,7 @@ export interface AdvanceInput {
   shopId: string;
   customerId: string;
   amount: number;
-  method: 'cash' | 'card' | 'bank-transfer' | 'other';
+  method: MoneyMethod;
   appointmentId: string | null;
   note: string;
 }

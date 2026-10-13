@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Download, MessageCircle, Pencil, Receipt, Trash2, Wallet, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, MessageCircle, Pencil, Receipt, Smartphone, Trash2, Wallet, XCircle } from 'lucide-react';
 import type { BridalPayment } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatDate, formatDateTime } from '@/utils/date';
@@ -20,6 +20,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ErrorState } from '@/components/ui/States';
+import { RequestPaymentModal } from '@/features/payments/RequestPaymentModal';
 import { BridalFormModal } from './BridalFormModal';
 import { STATUS_TONE } from './BridalPage';
 
@@ -35,6 +36,7 @@ export function BridalDetailPage(): JSX.Element {
   const toast = useToast();
   const b = db.bridalBookings.find((x) => x.id === bookingId);
   const [editing, setEditing] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [paying, setPaying] = useState<BridalPayment['kind'] | null>(null);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<BridalPayment['method']>('cash');
@@ -227,6 +229,12 @@ export function BridalDetailPage(): JSX.Element {
                   Take payment
                 </Button>
               )}
+              {b.status !== 'cancelled' && b.status !== 'completed' && balance > 0 && (
+                <Button size="sm" variant="outline" leftIcon={<Smartphone />} onClick={() => setLinkOpen(true)}>
+                  Online payment link
+                </Button>
+              )}
+              <RequestPaymentModal open={linkOpen} onClose={() => setLinkOpen(false)} purpose="bridal" refId={b.id} phone={b.phone} name={b.brideName} />
               {paid > 0 && b.status !== 'completed' && (
                 <Button size="sm" variant="outline" onClick={() => startPay('refund')}>
                   Refund
@@ -323,6 +331,8 @@ export function BridalDetailPage(): JSX.Element {
               { value: 'cash', label: 'Cash' },
               { value: 'card', label: 'Card' },
               { value: 'bank-transfer', label: 'Bank transfer' },
+              { value: 'jazzcash', label: 'JazzCash' },
+              { value: 'easypaisa', label: 'Easypaisa' },
               { value: 'other', label: 'Other' },
             ]}
           />
