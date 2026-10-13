@@ -50,13 +50,34 @@ Then, as owner:
    Add more logins (receptionist, manager) under **Users & logins**. Branch staff sign in with
    the username and password you give them; they cannot change it — only you can, from
    Users & logins or the branch page.
-4. **Lock sign-ups** (important): Supabase → **Authentication → Sign In / Providers** → turn off
-   **Allow new users to sign up**. You (the owner) are already in; branch logins are created by
-   you, so nobody else ever needs to sign up.
+4. **Keep sign-ups ON.** Customers create their own accounts in the Aura app (Google or email), so
+   Supabase → Authentication → *Allow new users to sign up* must stay on. That does not open the POS
+   to them: a login only sees POS data if you added it under Users & logins (row-level security in
+   `supabase/schema.sql`), and the first-owner claim only works on an empty project. A customer who
+   tries the POS with her app login is told the email "has not been given access" and sees nothing.
+   Turn on **Confirm email** (Authentication → Sign In / Providers → Email) so app accounts verify
+   their address.
 5. **Settings → Bill design**: paper size (A4, A5 or 80 mm receipt printer), title, colour, terms.
 6. Per branch: add **Staff** with rotas and monthly salary, **Products** with opening stock.
 
-## 5. Nightly backup — free
+## 5. Customer app, online payments and the website
+
+The Flutter app, its Python API and the website use **this same Supabase project** — one database for
+everything. Follow `Aura-App/docs/GO_LIVE.md` (deploy the API on Render free, Google sign-in for the
+app, JazzCash / Easypaisa merchant keys, building the app for the stores). Then, in the POS as owner:
+
+1. **Settings → Online & app**: payments server address (the Render URL), advance percentages, which
+   methods customers may use, the bank account shown for transfers, your shop JazzCash/Easypaisa
+   numbers, and the Play Store / App Store links once the app is published.
+2. **Messages**: post a first announcement (it shows in every customer's app under Aura Updates).
+3. Website: hand [`WEBSITE_CHANGES.md`](WEBSITE_CHANGES.md) to whoever edits the website.
+
+Day to day, branches use **Online Payments** (check bank-transfer receipts, send payment links,
+see money by platform — cash, card, bank, JazzCash, Easypaisa) and **Messages** (chats from the app).
+Every appointment, bridal booking and unpaid bill has an **Online payment link** button that makes a
+JazzCash / Easypaisa / card / bank-transfer link for an advance, the full amount or a part payment.
+
+## 6. Nightly backup — free
 
 1. Supabase → **Project Settings → Database → Connection string → URI** (Session pooler),
    with your database password filled in.
@@ -64,7 +85,7 @@ Then, as owner:
    `SUPABASE_DB_URL` = that string.
 3. Actions tab → *Nightly backup* → **Run workflow** once to check it is green.
 
-A full SQL dump is then kept for 90 days, every night at 02:00 Pakistan time. Restore with
+A full SQL dump — POS, app accounts, online payments and chats alike — is then kept for 90 days, every night at 02:00 Pakistan time. Restore with
 `psql "$SUPABASE_DB_URL" -f aura-backup-YYYY-MM-DD.sql`. The owner can also download a
 JSON copy any time from **Settings → Data**.
 

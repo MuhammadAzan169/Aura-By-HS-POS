@@ -1,3 +1,7 @@
+> **Newer, fuller guide:** [WEBSITE_CHANGES.md](WEBSITE_CHANGES.md) — live prices, real-time booking into the
+> diary, online advance payment and app download links, through the Aura API. The direct snippet below
+> still works for a simple enquiry form.
+
 # Connecting the website's "Book appointment" form to the POS
 
 Requests from the website land in **POS → Enquiries** within a second, for free — the website
