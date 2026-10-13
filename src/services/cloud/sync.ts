@@ -1,6 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Database } from '@/mock/seed';
-import type { Enquiry, Settings } from '@/types';
+import type { ChatMessage, Enquiry, OnlinePayment, Settings } from '@/types';
 import { liveDefaultSettings as defaultSettings } from '@/services/defaults';
 import { SCHEMA_VERSION } from '@/mock/seed';
 import { applyRemote, getDb, replaceDb, setMutationListener } from '@/store/dataStore';
@@ -109,6 +109,8 @@ export async function loadAll(): Promise<Database> {
     (db as unknown as Record<string, unknown[]>)[k] = rows[i] ?? [];
   });
   db.enquiries = db.enquiries.map(normaliseEnquiry);
+  db.messages = db.messages.map(normaliseMessage);
+  db.onlinePayments = db.onlinePayments.map(normalisePayment);
   const stored = settingsRows[0] as Partial<Settings> | undefined;
   // Merge over the defaults so a setting added in a later version is never missing.
   if (stored) db.settings = { ...defaultSettings, ...stored } as Settings;
@@ -142,6 +144,71 @@ function normaliseEnquiry(raw: unknown): Enquiry {
     customerId: typeof r.customerId === 'string' ? r.customerId : null,
     bookingId: typeof r.bookingId === 'string' ? r.bookingId : null,
   };
+}
+
+/** Chat rows are written by the customer app's API; never let a missing field break the inbox. */
+function normaliseMessage(raw: unknown): ChatMessage {
+  const r = (raw ?? {}) as Partial<ChatMessage> & Record<string, unknown>;
+  const str = (v: unknown, max = 2000): string => (typeof v === 'string' ? v.slice(0, max) : '');
+  const at = str(r.at, 40) || str(r.createdAt, 40) || new Date(0).toISOString();
+  return {
+    id: str(r.id, 80),
+    createdAt: str(r.createdAt, 40) || at,
+    updatedAt: str(r.updatedAt, 40) || at,
+    threadId: str(r.threadId, 200) || `${str(r.accountId, 80)}:${typeof r.shopId === 'string' ? r.shopId : 'hq'}`,
+    shopId: typeof r.shopId === 'string' ? r.shopId : null,
+    accountId: str(r.accountId, 80),
+    customerName: str(r.customerName, 120) || 'Customer',
+    customerPhone: str(r.customerPhone, 30),
+    customerEmail: str(r.customerEmail, 120),
+    from: r.from === 'staff' || r.from === 'system' ? r.from : 'customer',
+    authorName: str(r.authorName, 120) || (r.from === 'staff' ? 'Staff' : str(r.customerName, 120) || 'Customer'),
+    text: str(r.text),
+    imagePath: typeof r.imagePath === 'string' ? r.imagePath : null,
+    at,
+    readByStaff: r.readByStaff === true,
+    readByCustomer: r.readByCustomer === true,
+  };
+}
+
+/** Payment rows come from the API too; fill anything an older version left out. */
+function normalisePayment(raw: unknown): OnlinePayment {
+  const r = (raw ?? {}) as Partial<OnlinePayment>;
+  const at = typeof r.createdAt === 'string' ? r.createdAt : new Date(0).toISOString();
+  return {
+    paymentNo: '',
+    refId: null,
+    refLabel: '',
+    customerId: null,
+    customerName: 'Customer',
+    customerPhone: '',
+    accountId: null,
+    plan: 'full',
+    amount: 0,
+    method: null,
+    status: 'pending',
+    token: '',
+    gateway: null,
+    gatewayRef: null,
+    gatewayMessage: null,
+    slipPath: null,
+    payerNote: '',
+    paidAt: null,
+    verifiedBy: null,
+    rejectReason: null,
+    createdBy: 'app',
+    channel: 'app',
+    expiresAt: null,
+    appliedAt: null,
+    voucher: null,
+    ...r,
+    attempts: Array.isArray(r.attempts) ? r.attempts : [],
+    createdAt: at,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : at,
+    purpose: r.purpose ?? 'appointment',
+    shopId: r.shopId ?? '',
+    id: r.id ?? '',
+  } as OnlinePayment;
 }
 
 function diff(prev: Database, next: Database): Op[] {
@@ -276,7 +343,7 @@ function subscribe(): void {
       }
 
       const raw = (payload.new as Row).data;
-      const data = (key === 'enquiries' ? normaliseEnquiry(raw) : raw) as { id: string };
+      const data = (key === 'enquiries' ? normaliseEnquiry(raw) : key === 'messages' ? normaliseMessage(raw) : key === 'onlinePayments' ? normalisePayment(raw) : raw) as { id: string };
       applyRemote((db) => {
         const rows = db[key] as Array<{ id: string }>;
         const index = rows.findIndex((r) => r.id === data.id);
