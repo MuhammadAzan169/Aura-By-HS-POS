@@ -368,7 +368,14 @@ export function OnlinePaymentsPage(): JSX.Element {
               </div>
             )}
 
-            {['pending', 'failed'].includes(current.status) && (
+            {['pending', 'failed'].includes(current.status) && !online.payLinkReady(db) && (
+              <p className="text-xs text-warn">
+                Add the payments API address in Settings → Online payments before resending — there
+                is no link to send without it.
+              </p>
+            )}
+
+            {['pending', 'failed'].includes(current.status) && online.payLinkReady(db) && (
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"

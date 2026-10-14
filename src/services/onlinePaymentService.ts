@@ -56,9 +56,22 @@ export function onlineSettings(db: Database = read()): OnlinePaymentSettings {
   };
 }
 
+/**
+ * True once Settings → Online payments has a real API address. Until then no
+ * pay link can be built, because the customer pays on the API's own page.
+ */
+export function payLinkReady(db: Database = read()): boolean {
+  return /^https?:\/\/.+/i.test(onlineSettings(db).apiUrl.trim());
+}
+
+/**
+ * The link the customer opens to pay. Empty when the API address is not set —
+ * the caller must check `payLinkReady` and refuse to send rather than putting a
+ * made-up address in front of a customer.
+ */
 export function payUrl(p: Pick<OnlinePayment, 'token'>, db: Database = read()): string {
-  const api = onlineSettings(db).apiUrl.replace(/\/+$/, '');
-  return `${api || 'https://YOUR-API.onrender.com'}/pay/${p.token}`;
+  if (!payLinkReady(db)) return '';
+  return `${onlineSettings(db).apiUrl.trim().replace(/\/+$/, '')}/pay/${p.token}`;
 }
 
 // ------------------------------------------------------------- money owed

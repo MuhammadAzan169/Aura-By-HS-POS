@@ -73,6 +73,9 @@ export function RequestPaymentModal({
     }
   }, [purpose, refId, plan, amount, db]);
 
+  // Without an API address there is nowhere for the customer to pay, so the
+  // link would be a dead one sent to a real person.
+  const linkReady = online.payLinkReady(db);
   const link = made ? online.payUrl(made, db) : '';
   const message = made
     ? `Assalam o Alaikum ${name}! Here is your secure payment link from ${db.settings.business.name} for ${formatCurrency(made.amount)} (${made.refLabel}).\n\nPay with JazzCash, Easypaisa, card or bank transfer:\n${link}\n\nReference: ${made.paymentNo}`
@@ -106,7 +109,11 @@ export function RequestPaymentModal({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button loading={busy} disabled={preview === null} onClick={() => void create()}>
+            <Button
+              loading={busy}
+              disabled={preview === null || !linkReady}
+              onClick={() => void create()}
+            >
               Create link{preview !== null ? ` · ${formatCurrency(preview)}` : ''}
             </Button>
           </>
@@ -117,12 +124,7 @@ export function RequestPaymentModal({
         <div className="space-y-4">
           <div className="rounded-xl bg-canvas p-3.5 text-sm">
             <p className="font-medium text-ink">{formatCurrency(made.amount)} · {made.paymentNo}</p>
-            <p className="mt-1 break-all text-muted">{link}</p>
-            {!cfg.apiUrl && (
-              <p className="mt-2 text-xs text-warn">
-                Add the payments API address in Settings → Online payments, then make the link again — this one has a placeholder address.
-              </p>
-            )}
+            <p className="mt-1 break-all text-muted">{link || 'No link — the payments API address is not set.'}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button leftIcon={<MessageCircle />} onClick={() => openWhatsApp(phone, message)}>
@@ -146,6 +148,11 @@ export function RequestPaymentModal({
         </div>
       ) : owed.left <= 0 ? (
         <p className="text-sm text-muted">Nothing is left to pay.</p>
+      ) : !linkReady ? (
+        <p className="text-sm text-warn">
+          Add the payments API address in Settings → Online payments first. Without it there is
+          nowhere for the customer to pay, so no link can be made.
+        </p>
       ) : (
         <div className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-3">
