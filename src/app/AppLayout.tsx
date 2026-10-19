@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
+import { FlaskConical } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { exitDemo, isDemo } from '@/services/cloud/client';
 import { navFor } from './navigation';
 import { Sidebar } from '@/components/shared/Sidebar';
 import { Topbar } from '@/components/shared/Topbar';
@@ -31,6 +33,16 @@ export function AppLayout(): JSX.Element {
       <Sidebar sections={navFor(role)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {isDemo && (
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-warn px-4 py-1.5 text-center text-[12px] font-medium text-white">
+            <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>Demo mode — sample data in this browser. Nothing is saved to the salon.</span>
+            <button type="button" onClick={exitDemo} className="font-semibold underline underline-offset-2">
+              Leave demo
+            </button>
+          </div>
+        )}
+
         <Topbar />
 
         <main

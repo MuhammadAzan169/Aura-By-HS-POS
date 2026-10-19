@@ -3,13 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Lock, Mail, Store, UserCircle2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, FlaskConical, Lock, Mail, Store, UserCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { DEMO_ACCOUNTS } from '@/mock/shops';
 import { homeFor } from '@/app/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { isCloud } from '@/services/cloud/client';
+import { cloudConfigured, enterDemo, exitDemo, isCloud, isDemo } from '@/services/cloud/client';
 import {
   loginWithGoogle,
   sendPasswordReset,
@@ -212,9 +212,11 @@ export function LoginPage(): JSX.Element {
         </div>
 
         <p className="relative text-xs text-white/45">
-          {isCloud
-            ? 'Secured with Google sign-in and per-branch access rules.'
-            : 'Demo build — all data is generated and stored in your browser.'}
+          {isDemo
+            ? 'Demo mode — sample data in this browser only. Nothing here is real.'
+            : isCloud
+              ? 'Secured with Google sign-in and per-branch access rules.'
+              : 'Demo build — all data is generated and stored in your browser.'}
         </p>
       </section>
 
@@ -234,6 +236,25 @@ export function LoginPage(): JSX.Element {
               Bridal make-up · Saloon services · Photography studio
             </p>
           </div>
+
+          {isDemo && (
+            <div className="mb-6 rounded-xl border border-warn/30 bg-warn-soft px-4 py-3.5">
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+                <FlaskConical className="h-4 w-4 shrink-0" aria-hidden /> You are in the demo
+              </p>
+              <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+                Everything below runs on sample data kept in this browser. Nothing is saved to the
+                salon, and no real booking, bill or customer can be changed from here.
+              </p>
+              <button
+                type="button"
+                onClick={exitDemo}
+                className="mt-2.5 text-[12.5px] font-semibold text-brand hover:underline"
+              >
+                Leave the demo and sign in for real
+              </button>
+            </div>
+          )}
 
           {resetting && signedIn ? (
             <SetNewPassword onDone={() => navigate(homeFor(signedIn.role), { replace: true })} />
@@ -324,7 +345,10 @@ export function LoginPage(): JSX.Element {
             <div className="mt-4 flex flex-wrap justify-between gap-2 text-[13px]">
               {mode === 'signin' ? (
                 <>
-                  <span className="text-xs text-subtle">Branch login? Your owner gives you the username and password.</span>
+                  <span className="text-xs text-subtle">
+                    The owner signs in with Google. Branch logins are created by the owner under
+                    Users.
+                  </span>
                   <button type="button" className="text-muted hover:underline" onClick={() => setMode('forgot')}>
                     Forgot password?
                   </button>
@@ -337,11 +361,26 @@ export function LoginPage(): JSX.Element {
             </div>
           )}
 
-          {!isCloud && (
+          {isCloud && mode === 'signin' && (
+            <div className="mt-8 border-t border-line pt-5">
+              <p className="text-xs text-subtle">
+                Want to look around without touching real data?
+              </p>
+              <button
+                type="button"
+                onClick={enterDemo}
+                className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand hover:underline"
+              >
+                <FlaskConical className="h-3.5 w-3.5" aria-hidden /> Explore the demo instead
+              </button>
+            </div>
+          )}
+
+          {(isDemo || !cloudConfigured) && (
           <>
           <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-line" aria-hidden />
-            <span className="text-xs font-medium text-subtle">Or try a demo account</span>
+            <span className="text-xs font-medium text-subtle">Sign in to the demo</span>
             <span className="h-px flex-1 bg-line" aria-hidden />
           </div>
 
@@ -365,7 +404,7 @@ export function LoginPage(): JSX.Element {
           </div>
 
           <dl className="mt-6 space-y-2 rounded-xl border border-line bg-surface p-4 text-xs">
-            <p className="mb-2 font-semibold text-ink">Demo credentials</p>
+            <p className="mb-2 font-semibold text-ink">Demo credentials (sample data only)</p>
 
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-muted">Owners</dt>
