@@ -1,0 +1,29 @@
+{
+  // Cloudflare Workers Static Assets — how the POS is served in production.
+  //
+  // The POS is a static Vite bundle with client-side routing, so there is no
+  // Worker script: Cloudflare serves ./dist directly from its edge.
+  //
+  // `not_found_handling: single-page-application` is the important line. Deep
+  // links like /appointments or /login?reset=1 are real URLs to the browser but
+  // not real files on disk; without it the edge would 404 them instead of
+  // handing the request to index.html for the router to resolve. It is the
+  // Workers equivalent of the `/* /index.html 200` rule in public/_redirects,
+  // which Pages and Netlify use and which stays there for those hosts.
+  //
+  // Build settings in the Cloudflare dashboard:
+  //   Build command   npm run build
+  //   Deploy command  npx wrangler deploy
+  //
+  // The two VITE_SUPABASE_* variables must be set in the dashboard BEFORE the
+  // first build — Vite compiles them into the bundle, so a build without them
+  // produces a POS permanently stuck in demo mode. They are public by design;
+  // the service_role key must never be among them.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aura-by-hs-pos",
+  "compatibility_date": "2026-10-20",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
